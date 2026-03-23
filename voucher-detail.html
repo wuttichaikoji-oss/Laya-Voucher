@@ -30,11 +30,11 @@
       <div class="voucher-main">
         <div class="voucher-left">
           <p class="label">Recipient</p><p id="recipientText">-</p>
-          <p class="label">Phone</p><p id="phoneText">-</p>
           <p class="label">Room</p><p id="roomText">-</p>
+          <p class="label">Reason</p><p id="reasonText">-</p>
           <p class="label">Department / Outlet</p><p id="deptOutletText">-</p>
           <p class="label">Created At</p><p id="createdAtText">-</p>
-          <p class="label">Expiry Date</p><p id="expiryText">-</p>
+          <p class="label">Validity</p><p id="expiryText">-</p>
           <p class="label">Issued By</p><p id="issuedByText">-</p>
           <div id="extraInfoBox"></div>
         </div>
@@ -88,7 +88,6 @@
     const internalRefText = document.getElementById("internalRefText");
     const statusBadge = document.getElementById("statusBadge");
     const recipientText = document.getElementById("recipientText");
-    const phoneText = document.getElementById("phoneText");
     const roomText = document.getElementById("roomText");
     const deptOutletText = document.getElementById("deptOutletText");
     const createdAtText = document.getElementById("createdAtText");
@@ -147,11 +146,12 @@
 
     function renderActions(data) {
       const status = getDisplayStatus(data);
-      let html = `<button id="printBtn" type="button">Print / Save PDF</button>`;
+      let html = `<button id="openSlidesBtn" type="button">Open Voucher Slides</button><button id="printBtn" type="button">Print / Save PDF</button>`;
       if (status === "issued" && canRedeem(data)) html += `<button id="redeemBtn" type="button">Redeem</button>`;
       if (status === "issued" && canCancel(data)) html += `<button id="cancelBtn" type="button">Cancel</button>`;
       detailActions.innerHTML = html;
-      document.getElementById("printBtn").addEventListener("click", () => window.print());
+      document.getElementById("openSlidesBtn").addEventListener("click", () => window.open("view.html?code=" + encodeURIComponent(data.voucher_code || ""), "_blank"));
+      document.getElementById("printBtn").addEventListener("click", () => window.open("view.html?code=" + encodeURIComponent(data.voucher_code || ""), "_blank"));
       const redeemBtn = document.getElementById("redeemBtn");
       if (redeemBtn) redeemBtn.addEventListener("click", redeemVoucher);
       const cancelBtn = document.getElementById("cancelBtn");
@@ -164,11 +164,11 @@
       voucherCodeText.textContent = data.voucher_code || "-";
       internalRefText.textContent = data.internal_no || "-";
       recipientText.textContent = data.name || "-";
-      phoneText.textContent = data.phone || "-";
       roomText.textContent = data.room || "-";
+      document.getElementById("reasonText").textContent = data.reason || "-";
       deptOutletText.textContent = `${data.department || "-"} / ${data.outlet || "-"}`;
       createdAtText.textContent = formatDateTime(data.created_at);
-      expiryText.textContent = formatDateTime(data.expiry_date);
+      expiryText.textContent = data.validity_label === "จนกว่าจะใช้" ? "Until redeemed" : formatDateTime(data.expiry_date);
       issuedByText.textContent = data.issued_by_name || data.issued_by_uid || "-";
       setStatusBadge(status);
       renderQr(data.voucher_code || "");

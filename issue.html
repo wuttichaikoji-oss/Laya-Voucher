@@ -6,23 +6,137 @@
   <title>Issue Voucher</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <style>
+    .issue-grid { display:grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap:18px; }
+    .issue-form-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+    .issue-form-grid .full { grid-column: 1 / -1; }
+    .issue-note { background: linear-gradient(135deg, rgba(31,94,255,.08), rgba(15,142,165,.08)); border:1px solid var(--line); border-radius:16px; padding:14px 16px; color:var(--muted); }
+    .issue-preview-wrap { display:flex; flex-direction:column; gap:14px; }
+    .issue-preview-box { background: linear-gradient(160deg, #f9fbff 0%, #eef4ff 100%); border:1px solid rgba(31,94,255,.10); border-radius:18px; padding:18px; }
+    .voucher-mini { display:grid; grid-template-columns: minmax(0, 1fr) 180px; gap:14px; align-items:start; }
+    .voucher-mini-card { background:#fff; border:1px solid rgba(21,45,79,.08); border-radius:18px; padding:16px; box-shadow: 0 10px 24px rgba(18,52,93,.08); }
+    .mini-topline { font-size:.82rem; letter-spacing:.08em; color:#4a5c73; }
+    .mini-headline { font-size: clamp(1.9rem, 4vw, 3rem); line-height:.92; font-weight:800; color:#20252c; margin:.18rem 0 .55rem; }
+    .mini-body { color:#48596f; font-size:.98rem; }
+    .mini-meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+    .mini-chip { background:#f2f5fb; border:1px solid rgba(21,45,79,.08); color:#324760; padding:6px 10px; border-radius:999px; font-size:.85rem; }
+    .preview-right { display:flex; flex-direction:column; gap:12px; }
+    .preview-panel { background:#fff; border:1px solid rgba(21,45,79,.08); border-radius:18px; padding:14px; text-align:center; }
+    .preview-panel img { width:100%; max-height:120px; object-fit:contain; border-radius:12px; background:#f7f8fb; }
+    .preview-panel .caption { color:var(--muted); font-size:.85rem; margin-top:8px; }
+    .preview-summary { background:#fff; border:1px solid rgba(21,45,79,.08); border-radius:16px; padding:14px; }
+    .preview-summary p { margin:.45rem 0; }
+    .button-row { display:flex; flex-wrap:wrap; gap:10px; }
+    .button-secondary { background:#fff; color:var(--text); border:1px solid rgba(21,45,79,.16); }
+    .button-ghost { background:rgba(31,94,255,.08); color:var(--primary); border:1px solid rgba(31,94,255,.14); }
+    .button-row button[disabled] { opacity:.55; cursor:not-allowed; }
+    .inline-open { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:10px; }
+    .status-box { padding:14px 16px; border-radius:16px; }
+    .status-box.success { background: var(--success-bg); color: var(--success-text); }
+    .status-box.error { background: var(--danger-bg); color: var(--danger-text); }
+    .status-box h3 { margin:0 0 6px; }
+    @media (max-width: 980px) {
+      .issue-grid, .voucher-mini { grid-template-columns: 1fr; }
+      .issue-form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body class="app-page">
   <div class="container app-shell">
-    <section class="page-header"><div class="page-header-row"><div><span class="soft-badge">Voucher Flow</span><h1>Issue Voucher</h1><p class="page-subtitle">สร้าง Voucher ใหม่ได้อย่างเป็นระเบียบ ชัดเจน และพร้อมเปิดหน้า detail หรือพิมพ์ต่อได้ทันที</p></div></div></section>
-    <div class="card section-card">
-      <h2>Voucher Information</h2>
-      <p class="page-subtitle">กรอกข้อมูลผู้รับและเลือก outlet ก่อนสร้าง Voucher</p>
-      <div style="height:10px"></div>
-      <input id="name" placeholder="Name" />
-      <input id="phone" placeholder="Phone" />
-      <input id="room" placeholder="Room No" />
-      <select id="outlet"><option value="">Select Outlet</option></select>
-      <p id="outletHint" class="ref"></p>
-      <button id="createBtn">Generate Voucher</button>
+    <section class="page-header">
+      <div class="page-header-row">
+        <div>
+          <span class="soft-badge">Voucher Flow</span>
+          <h1>Issue Voucher</h1>
+          <p class="page-subtitle">ออก Voucher แบบใหม่โดยสร้าง QR &amp; Code ก่อน แล้วค่อยกดยืนยันสร้าง Voucher จริง พร้อมเปิดดูด้านหน้า-ด้านหลังได้ทันที</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="issue-grid">
+      <div class="card section-card">
+        <h2>Create Complimentary Drink Voucher</h2>
+        <p class="page-subtitle">หน้านี้ตัดเบอร์โทรและการเลือก Outlet ออกแล้ว โดยระบบจะออก Voucher สำหรับ Aroonsawat ตามรูปแบบตัวอย่าง</p>
+        <div style="height:10px"></div>
+
+        <div class="issue-note">
+          <strong>รูปแบบที่ใช้:</strong> Complimentary 1 Drink · Redeem at Aroonsawat · ด้านหน้ามี QR + Code · ด้านหลังมี policy และลายเซ็น GM
+        </div>
+
+        <div style="height:14px"></div>
+        <div class="issue-form-grid">
+          <input id="name" class="full" placeholder="Guest Name / Recipient Name (ไม่กรอกก็ได้)" />
+          <input id="room" placeholder="Room No (ไม่กรอกก็ได้)" />
+          <input id="reason" placeholder="Reason (เช่น Service Recovery / Welcome Amenity)" />
+          <div id="validityWrap" class="full">
+            <label class="label" for="validity">Voucher Validity</label>
+            <select id="validity">
+              <option value="7">7 วัน</option>
+              <option value="15">15 วัน</option>
+              <option value="30" selected>30 วัน</option>
+              <option value="unlimited">จนกว่าจะใช้</option>
+            </select>
+            <p class="ref" id="validityHint">สิทธิ์เลือกอายุ Voucher เปิดให้ admin</p>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+        <div class="button-row">
+          <button id="generateBtn" type="button">Generate QR &amp; Code</button>
+          <button id="createBtn" type="button" disabled>Create Voucher</button>
+        </div>
+
+        <div style="height:18px"></div>
+        <h3 style="margin:0 0 10px;">Open Existing QR &amp; Code</h3>
+        <div class="inline-open">
+          <input id="existingCode" type="text" placeholder="ใส่ Voucher Code ที่สร้างไปแล้ว" />
+          <button id="openExistingBtn" type="button" class="button-secondary">Open QR &amp; Code</button>
+        </div>
+      </div>
+
+      <div class="issue-preview-wrap">
+        <div id="previewSection" class="card section-card hidden">
+          <h2>Preview ก่อนสร้างจริง</h2>
+          <p class="page-subtitle">เมื่อกด Generate ระบบจะสร้าง QR และ Code สำหรับตรวจสอบก่อนบันทึกลงระบบ</p>
+          <div class="issue-preview-box">
+            <div class="voucher-mini">
+              <div class="voucher-mini-card">
+                <div class="mini-topline">COMPLIMENTARY</div>
+                <div class="mini-headline">1 DRINK</div>
+                <div class="mini-body">Show this voucher at <strong>AROONSAWAT</strong> to receive 1 complimentary drink <br>(Hot Coffee, Iced Coffee, or Soft Drink)</div>
+                <div class="mini-meta">
+                  <span class="mini-chip" id="miniDisplayNo">NO. -</span>
+                  <span class="mini-chip" id="miniVoucherCode">CODE -</span>
+                </div>
+              </div>
+              <div class="preview-right">
+                <div class="preview-panel"><div id="qrcode"></div><div class="caption">QR Code</div></div>
+                <div class="preview-summary">
+                  <p><strong>Guest:</strong> <span id="miniGuest">-</span></p>
+                  <p><strong>Room:</strong> <span id="miniRoom">-</span></p>
+                  <p><strong>Reason:</strong> <span id="miniReason">-</span></p>
+                  <p><strong>Validity:</strong> <span id="miniValidity">30 วัน</span></p>
+                  <p><strong>Outlet:</strong> Aroonsawat</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <h2>Template Assets</h2>
+          <p class="page-subtitle">อ้างอิงจากรูปตัวอย่างที่ส่งมา</p>
+          <div class="issue-form-grid">
+            <div class="preview-panel"><img src="assets/front_logo_crop.png" alt="Front logo" /><div class="caption">Front logo reference</div></div>
+            <div class="preview-panel"><img src="assets/front_venue_crop.png" alt="Front venue" /><div class="caption">Front venue image</div></div>
+            <div class="preview-panel full"><img src="assets/back_signature_crop.png" alt="GM signature" style="max-height:180px;object-fit:contain;" /><div class="caption">Back authorization reference</div></div>
+          </div>
+        </div>
+
+        <div id="result" class="hidden"></div>
+      </div>
     </div>
-    <div id="result" class="card section-card hidden result-highlight"></div>
-    <div id="qrcode" class="card section-card hidden"></div>
+
     <div class="nav no-print" id="navMenu"></div>
   </div>
 
@@ -36,36 +150,27 @@
     const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
     renderNav(profile);
 
-    const outletMap = {
-      FB: ["The Taste", "Mangrove", "Aroonsawat Lounge", "Room Service", "Banquet"],
-      FO: ["Front Desk", "Concierge"],
-      SPA: ["Spa Reception", "Treatment"]
-    };
-
+    const previewSection = document.getElementById("previewSection");
     const result = document.getElementById("result");
-    const qrBox = document.getElementById("qrcode");
+    const generateBtn = document.getElementById("generateBtn");
     const createBtn = document.getElementById("createBtn");
-    const outletEl = document.getElementById("outlet");
-    const outletHint = document.getElementById("outletHint");
+    const existingCodeInput = document.getElementById("existingCode");
+    const openExistingBtn = document.getElementById("openExistingBtn");
+    const validityWrap = document.getElementById("validityWrap");
+    const validityEl = document.getElementById("validity");
+    const validityHint = document.getElementById("validityHint");
+    const qrBox = document.getElementById("qrcode");
 
-    function populateOutletOptions() {
-      const dept = profile.department || "FB";
-      const outlets = outletMap[dept] || [];
-      outletEl.innerHTML = '<option value="">Select Outlet</option>' +
-        outlets.map((outlet) => `<option value="${outlet}">${outlet}</option>`).join("");
+    const fixedOutlet = "Aroonsawat";
+    let pendingVoucher = null;
 
-      if (profile.role === "staff" && profile.outlet && outlets.includes(profile.outlet)) {
-        outletEl.value = profile.outlet;
-        outletEl.disabled = true;
-        outletHint.textContent = `Role staff ถูกล็อก outlet เป็น ${profile.outlet}`;
-        return;
-      }
-
-      if (profile.outlet && outlets.includes(profile.outlet)) outletEl.value = profile.outlet;
-      outletEl.disabled = false;
-      outletHint.textContent = `แผนก ${dept} สามารถเลือก outlet ได้ตามสิทธิ์ของ role ${profile.role}`;
+    if (profile.role !== "admin") {
+      validityEl.value = "30";
+      validityEl.disabled = true;
+      validityHint.textContent = `Role ${profile.role} จะใช้อายุ Voucher มาตรฐาน 30 วัน`;
+    } else {
+      validityHint.textContent = "Admin สามารถเลือกอายุ Voucher เป็น 7 วัน, 15 วัน, 30 วัน หรือจนกว่าจะใช้";
     }
-    populateOutletOptions();
 
     function getYearMonth() {
       const now = new Date();
@@ -74,7 +179,12 @@
       return year + month;
     }
 
-    async function generateVoucherNo(department) {
+    function getFullYearMonth() {
+      const now = new Date();
+      return { year: String(now.getFullYear()), month: String(now.getMonth() + 1).padStart(2, "0") };
+    }
+
+    async function generateVoucherSerial(department) {
       const ym = getYearMonth();
       const key = `${department}_${ym}`;
       const ref = doc(db, "running_numbers", key);
@@ -89,7 +199,15 @@
           transaction.update(ref, { current_number: newNumber });
         }
       });
-      return `${department}-${ym}-${String(newNumber).padStart(4, "0")}`;
+      return {
+        sequence: newNumber,
+        internalNo: `${department}-${ym}-${String(newNumber).padStart(4, "0")}`
+      };
+    }
+
+    function buildDisplayNo(sequence) {
+      const { year, month } = getFullYearMonth();
+      return `AR${year}${month}${String(sequence).padStart(3, "0")}`;
     }
 
     function generateVoucherCode(length = 12) {
@@ -110,66 +228,148 @@
       return code;
     }
 
-    function renderQr(text) {
-      qrBox.classList.remove("hidden");
-      qrBox.innerHTML = '<h3>QR Code</h3><div id="qr-inner"></div>';
-      new QRCode(document.getElementById("qr-inner"), { text, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
+    function getValidityMeta() {
+      const value = profile.role === "admin" ? validityEl.value : "30";
+      if (value === "unlimited") return { mode: "until_redeemed", label: "จนกว่าจะใช้", expiryDate: null, days: null };
+      const days = parseInt(value || "30", 10);
+      const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      return { mode: `days_${days}`, label: `${days} วัน`, expiryDate, days };
     }
 
-    createBtn.addEventListener("click", async () => {
-      const name = document.getElementById("name").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const room = document.getElementById("room").value.trim();
-      const outlet = outletEl.value;
-      if (!name) return alert("กรุณาใส่ชื่อ");
-      if (!outlet) return alert("กรุณาเลือก Outlet");
+    function renderQr(text) {
+      qrBox.innerHTML = "";
+      new QRCode(qrBox, { text, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.H });
+    }
 
+    function fillPreview(data) {
+      previewSection.classList.remove("hidden");
+      document.getElementById("miniDisplayNo").textContent = `NO. ${data.displayNo}`;
+      document.getElementById("miniVoucherCode").textContent = `CODE ${data.voucherCode}`;
+      document.getElementById("miniGuest").textContent = data.name || "-";
+      document.getElementById("miniRoom").textContent = data.room || "-";
+      document.getElementById("miniReason").textContent = data.reason || "-";
+      document.getElementById("miniValidity").textContent = data.validityLabel || "30 วัน";
+      renderQr(data.voucherCode);
+      createBtn.disabled = false;
+    }
+
+    function renderResultSuccess(saved) {
+      result.className = "card section-card status-box success";
+      result.innerHTML = `
+        <h3>Voucher created successfully</h3>
+        <p><strong>Voucher Code:</strong> ${saved.voucher_code}</p>
+        <p><strong>Display No:</strong> ${saved.display_no}</p>
+        <p><strong>Outlet:</strong> ${saved.outlet}</p>
+        <div class="button-row" style="margin-top:12px;">
+          <button type="button" id="openViewBtn" class="button-secondary">Open QR &amp; Code</button>
+          <button type="button" id="openDetailBtn" class="button-ghost">Open Detail</button>
+        </div>
+      `;
+      document.getElementById("openViewBtn").addEventListener("click", () => {
+        window.open(`view.html?code=${encodeURIComponent(saved.voucher_code)}`, "_blank");
+      });
+      document.getElementById("openDetailBtn").addEventListener("click", () => {
+        window.open(`voucher-detail.html?code=${encodeURIComponent(saved.voucher_code)}`, "_blank");
+      });
+    }
+
+    function renderResultError(message) {
+      result.className = "card section-card status-box error";
+      result.innerHTML = `<h3>เกิดข้อผิดพลาด</h3><p>${message}</p>`;
+    }
+
+    generateBtn.addEventListener("click", async () => {
+      generateBtn.disabled = true;
+      createBtn.disabled = true;
       try {
-        const internalNo = await generateVoucherNo(profile.department || "FB");
+        const name = document.getElementById("name").value.trim();
+        const room = document.getElementById("room").value.trim();
+        const reason = document.getElementById("reason").value.trim();
+        const serial = await generateVoucherSerial(profile.department || "FB");
         const voucherCode = await generateUniqueVoucherCode();
-
-        await addDoc(collection(db, "vouchers"), {
-          internal_no: internalNo,
-          voucher_code: voucherCode,
-          name, phone, room,
+        const validity = getValidityMeta();
+        pendingVoucher = {
+          internalNo: serial.internalNo,
+          displayNo: buildDisplayNo(serial.sequence),
+          voucherCode,
+          name,
+          room,
+          reason,
+          outlet: fixedOutlet,
           department: profile.department || "FB",
-          outlet,
+          validityMode: validity.mode,
+          validityLabel: validity.label,
+          expiryDate: validity.expiryDate,
+          validityDays: validity.days
+        };
+        fillPreview(pendingVoucher);
+        result.className = "hidden";
+        result.innerHTML = "";
+      } catch (err) {
+        renderResultError(`Generate QR & Code ไม่สำเร็จ: ${err.message}`);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    createBtn.addEventListener("click", async () => {
+      if (!pendingVoucher) return alert("กรุณา Generate QR & Code ก่อน");
+      createBtn.disabled = true;
+      try {
+        const payload = {
+          internal_no: pendingVoucher.internalNo,
+          display_no: pendingVoucher.displayNo,
+          voucher_code: pendingVoucher.voucherCode,
+          name: pendingVoucher.name || "",
+          phone: "",
+          room: pendingVoucher.room || "",
+          reason: pendingVoucher.reason || "",
+          department: pendingVoucher.department,
+          outlet: pendingVoucher.outlet,
+          template_type: "starbucks_drink",
+          voucher_title_small: "COMPLIMENTARY",
+          voucher_title_big: "1 DRINK",
+          voucher_description: "Show this voucher at AROONSAWAT to receive 1 complimentary drink (Hot Coffee, Iced Coffee, or Soft Drink)",
+          validity_mode: pendingVoucher.validityMode,
+          validity_label: pendingVoucher.validityLabel,
+          validity_days: pendingVoucher.validityDays,
           status: "issued",
           issued_by_uid: user.uid,
           issued_by_name: profile.name,
           issued_by_role: profile.role,
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
-          expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        });
+          expiry_date: pendingVoucher.expiryDate,
+          policy_version: "v1"
+        };
+
+        await addDoc(collection(db, "vouchers"), payload);
 
         await addDoc(collection(db, "voucher_logs"), {
-          voucher_code: voucherCode,
-          voucher_ref: internalNo,
-          department: profile.department || "FB",
-          outlet,
+          voucher_code: pendingVoucher.voucherCode,
+          voucher_ref: pendingVoucher.internalNo,
+          department: pendingVoucher.department,
+          outlet: pendingVoucher.outlet,
           action: "issued",
           action_at: serverTimestamp(),
           action_by_uid: user.uid,
           action_by_name: profile.name,
           action_by_role: profile.role,
-          note: `Voucher issued for ${name || "-"}`
+          note: `Voucher issued${pendingVoucher.reason ? ` / ${pendingVoucher.reason}` : ""}`
         });
 
-        const voucherLink = `voucher-detail.html?code=${encodeURIComponent(voucherCode)}`;
-        result.classList.remove("hidden");
-        result.innerHTML = `
-          <p class="success">สร้าง Voucher สำเร็จ</p>
-          <p><strong>Voucher Code:</strong> ${voucherCode}</p>
-          <p class="ref">Ref: ${internalNo}</p>
-          <p><strong>Outlet:</strong> ${outlet}</p>
-          <p><a href="${voucherLink}" target="_blank">Open Voucher Detail</a></p>
-        `;
-        renderQr(voucherCode);
+        renderResultSuccess(payload);
       } catch (err) {
-        result.classList.remove("hidden");
-        result.innerHTML = `<p class="error">สร้าง Voucher ไม่สำเร็จ: ${err.message}</p>`;
+        renderResultError(`สร้าง Voucher ไม่สำเร็จ: ${err.message}`);
+      } finally {
+        createBtn.disabled = false;
       }
+    });
+
+    openExistingBtn.addEventListener("click", () => {
+      const code = existingCodeInput.value.trim();
+      if (!code) return alert("กรุณาใส่ Voucher Code");
+      window.open(`view.html?code=${encodeURIComponent(code)}`, "_blank");
     });
   </script>
 </body>

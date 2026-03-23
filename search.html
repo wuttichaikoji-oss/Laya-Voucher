@@ -141,14 +141,14 @@
         result.innerHTML = `
           <h2>${data.voucher_code || "-"}</h2>
           <p><strong>ชื่อผู้รับ:</strong> ${data.name || "-"}</p>
-          <p><strong>เบอร์โทร:</strong> ${data.phone || "-"}</p>
           <p><strong>ห้อง:</strong> ${data.room || "-"}</p>
+          <p><strong>เหตุผล:</strong> ${data.reason || "-"}</p>
           <p><strong>Outlet:</strong> ${data.outlet || "-"}</p>
           <p><strong>สถานะ:</strong> ${data.status || "-"}</p>
           <p><strong>วันที่สร้าง:</strong> ${formatDate(data.created_at)}</p>
-          <p><strong>หมดอายุ:</strong> ${formatDate(data.expiry_date)}</p>
+          <p><strong>อายุ Voucher:</strong> ${data.validity_label || formatDate(data.expiry_date)}</p>
           <p class="ref">Ref: ${data.internal_no || "-"}</p>
-          <p><a href="${detailLink}">Open Detail Page</a></p>
+          <p><a href="${detailLink}">Open Detail Page</a> · <a href="view.html?code=${encodeURIComponent(data.voucher_code || "")}" target="_blank">Open QR & Code</a></p>
           <div id="actionArea"></div>
         `;
 

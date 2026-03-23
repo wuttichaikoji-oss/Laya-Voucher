@@ -3,43 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voucher</title>
+  <title>Voucher Slides</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <style>
+    .voucher-slider-page { min-height:100vh; background: var(--bg-accent); }
+    .voucher-view-shell { max-width:1100px; margin:0 auto; padding:24px 16px 42px; }
+    .viewer-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .viewer-toolbar .left { display:flex; flex-direction:column; gap:4px; }
+    .viewer-toolbar .actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .viewer-toolbar button, .viewer-toolbar a { appearance:none; border:none; padding:12px 16px; border-radius:14px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-soft); border:1px solid var(--line); text-decoration:none; font-weight:700; }
+    .viewer-toolbar .primary { background:linear-gradient(135deg, var(--primary), #4e8dff); color:#fff; }
+    .slider-shell { position:relative; overflow:hidden; border-radius:26px; }
+    .slider-track { display:flex; transition: transform .35s ease; }
+    .slide { min-width:100%; padding:6px; }
+    .voucher-stage { background:var(--surface); border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow); padding:22px; min-height:640px; }
+    .voucher-front-grid, .voucher-back-grid { display:grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap:22px; min-height:596px; }
+    .front-card-left, .front-card-right, .back-card-left, .back-card-right { background:#fff; border:1px solid rgba(21,45,79,.08); border-radius:20px; padding:22px; }
+    .front-card-left { display:flex; flex-direction:column; justify-content:space-between; background:linear-gradient(180deg, #ffffff 0%, #fbfcff 100%); }
+    .voucher-kicker { font-size:1.2rem; letter-spacing:.08em; color:#2d333b; }
+    .voucher-headline { font-size: clamp(3rem, 6vw, 5.8rem); line-height:.92; font-weight:900; color:#22272f; margin:.2rem 0 .75rem; }
+    .voucher-copy { font-size:1.32rem; line-height:1.5; color:#38485c; max-width:92%; }
+    .voucher-copy strong { color:#1f3146; }
+    .voucher-cash-note { color:#57687c; font-size:1rem; margin-top:18px; }
+    .voucher-no-box { display:inline-flex; align-items:center; gap:10px; border:2px solid #bcc6d4; border-radius:16px; padding:12px 18px; font-weight:800; font-size:1.35rem; color:#394a5d; background:#fff; margin-top:20px; }
+    .voucher-code-box { margin-top:14px; font-size:1rem; color:#5d6c80; font-weight:700; letter-spacing:.05em; }
+    .front-card-right { display:flex; flex-direction:column; gap:16px; }
+    .logo-panel, .venue-panel, .qr-panel { background:#fff; border:1px solid rgba(21,45,79,.08); border-radius:18px; padding:14px; text-align:center; }
+    .logo-panel img, .venue-panel img { width:100%; border-radius:14px; object-fit:cover; background:#f7f9fc; }
+    .logo-panel img { max-height:170px; object-fit:contain; }
+    .venue-panel img { height:210px; }
+    .qr-panel { display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; }
+    .qr-caption { color:#5f6f84; font-size:.95rem; }
+    .voucher-status { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; font-size:.92rem; font-weight:800; width:max-content; }
+    .voucher-status.issued { background:#eef4ff; color:#2157d4; }
+    .voucher-status.redeemed { background:#e9f8ee; color:#157347; }
+    .voucher-status.cancelled { background:#fff0f0; color:#c0392b; }
+    .voucher-status.expired { background:#fff6e7; color:#b26b00; }
+    .back-card-left { display:flex; flex-direction:column; }
+    .line-group { display:grid; gap:14px; margin-bottom:20px; }
+    .line-item { display:grid; grid-template-columns: 150px 1fr; gap:10px; align-items:end; }
+    .line-label { font-size:1.16rem; font-weight:800; color:#35485f; }
+    .line-value { min-height:42px; border-bottom:2px solid #cdd6e3; padding:6px 2px 8px; font-size:1.06rem; color:#33475c; }
+    .terms-title { font-size:1.2rem; font-style:italic; font-weight:800; margin:6px 0 12px; color:#374b60; }
+    .terms-list { margin:0; padding-left:20px; color:#435469; line-height:1.65; font-size:1rem; }
+    .back-card-right { display:flex; flex-direction:column; gap:16px; justify-content:flex-start; }
+    .auth-box, .summary-box { border:1px solid rgba(21,45,79,.08); border-radius:18px; padding:16px; background:#fff; }
+    .auth-box img { width:100%; border-radius:14px; object-fit:contain; background:#fafbfd; }
+    .auth-caption { color:#5f6f84; font-size:.95rem; margin-top:8px; text-align:center; }
+    .summary-box p { margin:.5rem 0; }
+    .slider-controls { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:16px; }
+    .slider-controls button { appearance:none; border:none; padding:12px 16px; border-radius:14px; background:#fff; color:var(--text); box-shadow:var(--shadow-soft); border:1px solid var(--line); font-weight:800; }
+    .dots { display:flex; gap:8px; }
+    .dot { width:10px; height:10px; border-radius:999px; background:rgba(21,45,79,.18); }
+    .dot.active { background:var(--primary); width:28px; }
+    .loading-card { background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:30px; box-shadow:var(--shadow-soft); }
+    @media (max-width: 900px) {
+      .voucher-front-grid, .voucher-back-grid { grid-template-columns: 1fr; min-height:auto; }
+      .voucher-stage { min-height:auto; }
+      .voucher-copy { max-width:100%; font-size:1.1rem; }
+      .voucher-headline { font-size:3.4rem; }
+      .line-item { grid-template-columns:1fr; gap:6px; }
+      .venue-panel img { height:180px; }
+    }
+    @media print {
+      body { background:#fff !important; }
+      .viewer-toolbar, .slider-controls { display:none !important; }
+      .voucher-view-shell { max-width:none; padding:0; }
+      .slider-shell { overflow:visible; }
+      .slider-track { display:block; transform:none !important; }
+      .slide { min-width:auto; padding:0; page-break-inside:avoid; }
+      .voucher-stage { box-shadow:none; border:none; min-height:auto; padding:0; }
+      .voucher-front-grid, .voucher-back-grid { min-height:auto; }
+      @page { size:A4 portrait; margin:10mm; }
+    }
+  </style>
 </head>
-<body class="voucher-page">
-  <div class="print-toolbar no-print">
-    <button id="printBtn" type="button">Print / Save PDF</button>
-    <a class="button-like" href="voucher-detail.html">Back</a>
-  </div>
-
-  <div class="voucher-print-card" id="voucherCard">
-    <div class="voucher-head">
-      <div>
-        <h1>Laya Resort</h1>
-        <p class="voucher-subtitle">Official Voucher</p>
+<body class="voucher-slider-page">
+  <div class="voucher-view-shell">
+    <div class="viewer-toolbar no-print">
+      <div class="left">
+        <span class="soft-badge">Voucher Slides</span>
+        <h1 style="margin:0;">Front / Back Voucher</h1>
+        <p class="page-subtitle" style="margin:0;">เลื่อนสไลด์เพื่อดูด้านหน้าและ policy ด้านหลังของ Voucher</p>
       </div>
-      <div id="statusBadge" class="status-badge">Loading</div>
-    </div>
-
-    <div class="voucher-main">
-      <div class="voucher-left">
-        <p class="label">Voucher Code</p><h2 id="voucherCode">-</h2>
-        <p class="label">Recipient</p><p id="recipientName">-</p>
-        <p class="label">Room</p><p id="roomNo">-</p>
-        <p class="label">Department / Outlet</p><p id="deptOutlet">-</p>
-        <p class="label">Expiry</p><p id="expiryText">-</p>
-        <p class="label">Reference</p><p id="internalRef" class="ref">-</p>
-      </div>
-      <div class="voucher-right">
-        <div id="qrcode"></div>
-        <p class="scan-note">Present this QR code when redeeming</p>
+      <div class="actions">
+        <button class="primary" id="printBtn" type="button">Print / Save PDF</button>
+        <a href="javascript:history.back()">Back</a>
       </div>
     </div>
 
-    <div class="voucher-footer">
-      <p id="statusNote">-</p>
-      <p class="terms">This voucher is valid for one-time use only and is subject to outlet policy.</p>
+    <div id="loadingState" class="loading-card">Loading voucher...</div>
+
+    <div id="viewer" class="hidden">
+      <div class="slider-shell">
+        <div class="slider-track" id="sliderTrack">
+          <section class="slide">
+            <div class="voucher-stage">
+              <div class="voucher-front-grid">
+                <div class="front-card-left">
+                  <div>
+                    <div class="voucher-status issued" id="frontStatus">issued</div>
+                    <div class="voucher-kicker" id="frontTitleSmall">COMPLIMENTARY</div>
+                    <div class="voucher-headline" id="frontTitleBig">1 DRINK</div>
+                    <div class="voucher-copy" id="frontDescription">Show this voucher at <strong>AROONSAWAT</strong> to receive 1 complimentary drink (Hot Coffee, Iced Coffee, or Soft Drink)</div>
+                    <div class="voucher-cash-note" id="frontNote">* This voucher cannot be exchanged for cash.</div>
+                  </div>
+                  <div>
+                    <div class="voucher-no-box" id="displayNo">NO. -</div>
+                    <div class="voucher-code-box" id="voucherCodeText">CODE: -</div>
+                  </div>
+                </div>
+                <div class="front-card-right">
+                  <div class="logo-panel">
+                    <img src="assets/front_logo_crop.png" alt="Starbucks logo reference">
+                  </div>
+                  <div class="venue-panel">
+                    <img src="assets/front_venue_crop.png" alt="Aroonsawat venue reference">
+                  </div>
+                  <div class="qr-panel">
+                    <div id="qrcode"></div>
+                    <div class="qr-caption">Present this QR code and voucher code when redeeming</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="slide">
+            <div class="voucher-stage">
+              <div class="voucher-back-grid">
+                <div class="back-card-left">
+                  <div class="line-group">
+                    <div class="line-item"><div class="line-label">VALID DATE:</div><div class="line-value" id="validDateValue">-</div></div>
+                    <div class="line-item"><div class="line-label">ISSUED BY:</div><div class="line-value" id="issuedByValue">-</div></div>
+                    <div class="line-item"><div class="line-label">REASON:</div><div class="line-value" id="reasonValue">-</div></div>
+                  </div>
+                  <div class="terms-title">Terms &amp; Conditions</div>
+                  <ul class="terms-list">
+                    <li>This voucher is redeemable only at Aroonsawat.</li>
+                    <li>Must be presented to staff before placing an order.</li>
+                    <li>This voucher can be used only for the drink specified on the voucher.</li>
+                    <li>Cannot be combined with other promotions, discounts, or special offers.</li>
+                    <li>This voucher is non-transferable, non-refundable, and cannot be exchanged for cash.</li>
+                    <li>Management reserves the right to amend these terms and conditions without prior notice.</li>
+                  </ul>
+                </div>
+                <div class="back-card-right">
+                  <div class="auth-box">
+                    <img src="assets/back_signature_crop.png" alt="GM approval reference">
+                    <div class="auth-caption">Authorized signature</div>
+                  </div>
+                  <div class="summary-box">
+                    <p><strong>Voucher Code:</strong> <span id="summaryCode">-</span></p>
+                    <p><strong>Room:</strong> <span id="summaryRoom">-</span></p>
+                    <p><strong>Guest:</strong> <span id="summaryGuest">-</span></p>
+                    <p><strong>Outlet:</strong> <span id="summaryOutlet">Aroonsawat</span></p>
+                    <p><strong>Status:</strong> <span id="summaryStatus">-</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="slider-controls no-print">
+        <button type="button" id="prevBtn">◀ Prev</button>
+        <div class="dots"><span class="dot active"></span><span class="dot"></span></div>
+        <button type="button" id="nextBtn">Next ▶</button>
+      </div>
     </div>
   </div>
 
@@ -49,16 +182,11 @@
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-
-    const voucherCodeEl = document.getElementById("voucherCode");
-    const recipientNameEl = document.getElementById("recipientName");
-    const roomNoEl = document.getElementById("roomNo");
-    const deptOutletEl = document.getElementById("deptOutlet");
-    const expiryTextEl = document.getElementById("expiryText");
-    const internalRefEl = document.getElementById("internalRef");
-    const statusBadgeEl = document.getElementById("statusBadge");
-    const statusNoteEl = document.getElementById("statusNote");
-    const printBtn = document.getElementById("printBtn");
+    const sliderTrack = document.getElementById("sliderTrack");
+    const viewer = document.getElementById("viewer");
+    const loadingState = document.getElementById("loadingState");
+    const dots = Array.from(document.querySelectorAll('.dot'));
+    let currentIndex = 0;
 
     function toDateObject(value) {
       if (!value) return null;
@@ -66,51 +194,76 @@
     }
     function formatDate(value) {
       const d = toDateObject(value);
-      return d ? d.toLocaleDateString("th-TH") : "-";
+      return d ? d.toLocaleDateString("en-GB") : "Until redeemed";
     }
     function getDisplayStatus(data) {
       const expiry = toDateObject(data.expiry_date);
       if (data.status === "issued" && expiry && new Date() > expiry) return "expired";
-      return data.status || "-";
+      return data.status || "issued";
     }
-    function applyStatusUI(status) {
-      statusBadgeEl.className = "status-badge status-" + status;
-      const map = {
-        issued: "This voucher is active and ready to redeem.",
-        redeemed: "This voucher has already been redeemed.",
-        expired: "This voucher is expired and can no longer be used.",
-        cancelled: "This voucher has been cancelled."
-      };
-      statusBadgeEl.textContent = status;
-      statusNoteEl.textContent = map[status] || "-";
+    function setSlide(index) {
+      currentIndex = Math.max(0, Math.min(1, index));
+      sliderTrack.style.transform = `translateX(-${currentIndex * 100}%)`;
+      dots.forEach((dot, i) => dot.classList.toggle('active', i === currentIndex));
     }
+    document.getElementById('prevBtn').addEventListener('click', () => setSlide(currentIndex - 1));
+    document.getElementById('nextBtn').addEventListener('click', () => setSlide(currentIndex + 1));
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
 
-    async function loadVoucher() {
-      if (!code) { voucherCodeEl.textContent = "Invalid voucher"; return; }
-      const q = query(collection(db, "vouchers"), where("voucher_code", "==", code));
-      const snap = await getDocs(q);
-      if (snap.empty) { voucherCodeEl.textContent = "Voucher not found"; return; }
-      const data = snap.docs[0].data();
+    let startX = null;
+    sliderTrack.addEventListener('touchstart', (e) => { startX = e.changedTouches[0].clientX; }, { passive:true });
+    sliderTrack.addEventListener('touchend', (e) => {
+      if (startX == null) return;
+      const diff = e.changedTouches[0].clientX - startX;
+      if (Math.abs(diff) > 50) setSlide(diff < 0 ? currentIndex + 1 : currentIndex - 1);
+      startX = null;
+    }, { passive:true });
+
+    function fillVoucher(data) {
       const displayStatus = getDisplayStatus(data);
-      voucherCodeEl.textContent = data.voucher_code || "-";
-      recipientNameEl.textContent = data.name || "-";
-      roomNoEl.textContent = data.room || "-";
-      deptOutletEl.textContent = `${data.department || "-"} / ${data.outlet || "-"}`;
-      expiryTextEl.textContent = formatDate(data.expiry_date);
-      internalRefEl.textContent = data.internal_no || "-";
-      applyStatusUI(displayStatus);
-      new QRCode(document.getElementById("qrcode"), {
-        text: data.voucher_code || "",
-        width: 180,
-        height: 180,
+      const frontStatus = document.getElementById('frontStatus');
+      frontStatus.textContent = displayStatus;
+      frontStatus.className = `voucher-status ${displayStatus}`;
+
+      document.getElementById('frontTitleSmall').textContent = data.voucher_title_small || 'COMPLIMENTARY';
+      document.getElementById('frontTitleBig').textContent = data.voucher_title_big || '1 DRINK';
+      document.getElementById('frontDescription').innerHTML = (data.voucher_description || 'Show this voucher at <strong>AROONSAWAT</strong> to receive 1 complimentary drink (Hot Coffee, Iced Coffee, or Soft Drink)').replace('AROONSAWAT', '<strong>AROONSAWAT</strong>');
+      document.getElementById('frontNote').textContent = '* This voucher cannot be exchanged for cash.';
+      document.getElementById('displayNo').textContent = `NO. ${data.display_no || data.internal_no || '-'}`;
+      document.getElementById('voucherCodeText').textContent = `CODE: ${data.voucher_code || '-'}`;
+      document.getElementById('validDateValue').textContent = data.validity_label === 'จนกว่าจะใช้' ? 'Until Redeemed' : formatDate(data.expiry_date);
+      document.getElementById('issuedByValue').textContent = data.issued_by_name || '-';
+      document.getElementById('reasonValue').textContent = data.reason || '-';
+      document.getElementById('summaryCode').textContent = data.voucher_code || '-';
+      document.getElementById('summaryRoom').textContent = data.room || '-';
+      document.getElementById('summaryGuest').textContent = data.name || '-';
+      document.getElementById('summaryOutlet').textContent = data.outlet || 'Aroonsawat';
+      document.getElementById('summaryStatus').textContent = displayStatus;
+
+      const qr = document.getElementById('qrcode');
+      qr.innerHTML = '';
+      new QRCode(qr, {
+        text: data.voucher_code || '',
+        width: 170,
+        height: 170,
         correctLevel: QRCode.CorrectLevel.H
       });
     }
 
-    printBtn.addEventListener("click", () => window.print());
-    loadVoucher().catch((err) => {
-      voucherCodeEl.textContent = "Load failed";
-      statusNoteEl.textContent = err.message;
+    async function loadVoucher() {
+      if (!code) throw new Error('Invalid voucher code');
+      const q = query(collection(db, 'vouchers'), where('voucher_code', '==', code));
+      const snap = await getDocs(q);
+      if (snap.empty) throw new Error('Voucher not found');
+      return snap.docs[0].data();
+    }
+
+    loadVoucher().then((data) => {
+      fillVoucher(data);
+      loadingState.classList.add('hidden');
+      viewer.classList.remove('hidden');
+    }).catch((err) => {
+      loadingState.textContent = err.message;
     });
   </script>
 </body>
