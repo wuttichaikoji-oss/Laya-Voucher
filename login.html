@@ -6,77 +6,58 @@
   <title>Login - Laya Voucher</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="auth-page">
-  <div class="container auth-shell">
-    <section class="auth-hero auth-hero-login">
-      <div class="auth-hero-top">
-        <span class="brand-badge">Laya Resort Phuket</span>
-        <h1 class="auth-title">Laya Voucher System</h1>
-        <p class="auth-subtitle">ระบบจัดการ Voucher สำหรับการออกสิทธิ์ ตรวจสอบ และ Redeem แบบใช้งานจริงในหน้างาน พร้อมควบคุมสิทธิ์ตาม role อย่างชัดเจน</p>
+<body class="auth-page auth-page-compact">
+  <div class="container auth-shell auth-shell-compact">
+    <section class="auth-card auth-card-compact auth-card-login-single">
+      <div class="auth-card-glow"></div>
+      <div class="auth-card-header compact-center">
+        <span class="brand-badge brand-badge-solid">Laya Resort Phuket</span>
+        <h1 class="auth-title compact-title">Laya Voucher System</h1>
+        <p class="auth-subtitle compact-subtitle">เข้าสู่ระบบด้วยรหัสพนักงานและรหัสผ่าน เพื่อใช้งานระบบ Voucher ตามสิทธิ์ของคุณ</p>
+      </div>
 
-        <div class="auth-hero-badges">
-          <span>Secure Access</span>
-          <span>Fast Redeem</span>
-          <span>Role Control</span>
+      <div class="auth-highlight-strip">
+        <span>Secure Login</span>
+        <span>Fast Redeem</span>
+        <span>Role-Based Access</span>
+      </div>
+
+      <div class="auth-form auth-form-compact">
+        <div class="field-group">
+          <label for="employeeId">รหัสพนักงาน</label>
+          <input id="employeeId" type="text" placeholder="เช่น 300204 หรือ FB001" autocomplete="username" />
+        </div>
+
+        <div class="field-group">
+          <label for="password">รหัสผ่าน</label>
+          <input id="password" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" />
+        </div>
+
+        <button id="loginBtn">เข้าสู่ระบบ</button>
+        <p id="msg"></p>
+      </div>
+
+      <div class="auth-note auth-note-soft">
+        <strong>การใช้งานตามสิทธิ์</strong>
+        <span>บัญชีที่สมัครใหม่จะเริ่มต้นเป็น <b>staff</b> และสามารถใช้งานหน้า <b>Redeem</b> ได้ทันที ส่วนสิทธิ์อื่นให้ผู้ดูแลระบบปรับเพิ่มภายหลัง</span>
+      </div>
+
+      <div class="auth-divider-text"><span>พร้อมเริ่มใช้งานในหน้างาน</span></div>
+
+      <div class="auth-feature-list">
+        <div class="auth-feature-item">
+          <strong>Redeem ได้เร็ว</strong>
+          <span>เหมาะกับพนักงานหน้างาน ใช้งานง่าย ไม่ซับซ้อน</span>
+        </div>
+        <div class="auth-feature-item">
+          <strong>ตรวจสอบสิทธิ์ชัดเจน</strong>
+          <span>แยกการมองเห็นและการทำงานตาม role อัตโนมัติ</span>
         </div>
       </div>
 
-      <div class="auth-hero-panel">
-        <div class="auth-panel-head">
-          <div>
-            <p class="auth-panel-label">Operational flow</p>
-            <h3>ออกแบบให้หน้างานใช้ง่ายและควบคุมสิทธิ์ได้จริง</h3>
-          </div>
-          <span class="auth-panel-chip">Live workflow</span>
-        </div>
-
-        <div class="auth-mini-grid">
-          <div class="auth-mini-card">
-            <strong>Issue Voucher</strong>
-            <span>ออกสิทธิ์พร้อม reference และ outlet อย่างเป็นระบบ</span>
-          </div>
-          <div class="auth-mini-card">
-            <strong>Search & Verify</strong>
-            <span>ค้นหา ตรวจสอบสถานะ และดูรายละเอียด voucher ได้รวดเร็ว</span>
-          </div>
-          <div class="auth-mini-card">
-            <strong>Redeem Control</strong>
-            <span>พนักงานหน้างานทำ Redeem ได้อย่างเดียวตามสิทธิ์ที่กำหนด</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="auth-side">
-      <div class="auth-card">
-        <span class="soft-badge">Welcome back</span>
-        <h2>เข้าสู่ระบบ</h2>
-        <p class="page-subtitle">กรอกรหัสพนักงานและรหัสผ่านเพื่อเข้าสู่ระบบตามสิทธิ์ของคุณ</p>
-
-        <div class="auth-form">
-          <div class="field-group">
-            <label for="employeeId">รหัสพนักงาน</label>
-            <input id="employeeId" type="text" placeholder="เช่น 300204 หรือ FB001" autocomplete="username" />
-          </div>
-
-          <div class="field-group">
-            <label for="password">รหัสผ่าน</label>
-            <input id="password" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" />
-          </div>
-
-          <button id="loginBtn">เข้าสู่ระบบ</button>
-          <p id="msg"></p>
-        </div>
-
-        <div class="auth-note">
-          <strong>หมายเหตุ</strong>
-          <span>บัญชีที่สมัครใหม่จะเริ่มต้นเป็น <b>staff</b> และเข้าใช้งานหน้า Redeem ได้ทันที</span>
-        </div>
-
-        <div class="auth-bottom-row">
-          <span class="auth-bottom-text">ยังไม่มีบัญชี?</span>
-          <a class="auth-inline-link" href="register.html">สมัครสมาชิกใหม่</a>
-        </div>
+      <div class="auth-bottom-row auth-bottom-center">
+        <span class="auth-bottom-text">ยังไม่มีบัญชี?</span>
+        <a class="auth-inline-link" href="register.html">สมัครสมาชิกใหม่</a>
       </div>
     </section>
   </div>
