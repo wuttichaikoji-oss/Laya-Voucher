@@ -117,8 +117,8 @@
       padding:6px 0 10px;
     }
     .coupon-card {
-      width:min(100%, 720px);
-      min-height:392px;
+      width:min(100%, 680px);
+      min-height:372px;
       border-radius:28px;
       overflow:hidden;
       position:relative;
@@ -152,7 +152,7 @@
     .coupon-front,
     .coupon-back {
       display:grid;
-      grid-template-columns: 1.2fr .8fr;
+      grid-template-columns: 1.28fr .72fr;
       background:linear-gradient(135deg, #f8f4eb 0%, #efe4d3 100%);
     }
     .panel-main,
@@ -179,9 +179,10 @@
       color:#fff;
       border-left:1px dashed rgba(198,165,108,.38);
       background:
-        radial-gradient(circle at top right, rgba(255,255,255,.10), transparent 30%),
-        radial-gradient(circle at bottom left, rgba(255,255,255,.08), transparent 26%),
-        linear-gradient(165deg, var(--forest) 0%, var(--forest-2) 100%);
+        radial-gradient(circle at top right, rgba(255,255,255,.12), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(255,255,255,.08), transparent 24%),
+        repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0 14px, rgba(255,255,255,.01) 14px 28px),
+        linear-gradient(165deg, #12392f 0%, #0c2922 100%);
     }
     .panel-side::before {
       content:"";
@@ -195,7 +196,7 @@
       width:92px;
       height:4px;
       border-radius:999px;
-      margin:0 0 14px;
+      margin:0 0 12px;
       background:linear-gradient(90deg, rgba(198,165,108,.2), var(--gold), rgba(198,165,108,.18));
       box-shadow:0 0 14px rgba(198,165,108,.24);
     }
@@ -245,16 +246,16 @@
     }
     .coupon-copy {
       margin:14px 0 0;
-      font-size:1rem;
+      font-size:1.02rem;
       line-height:1.65;
       color:#3b4c56;
-      max-width:92%;
+      max-width:94%;
     }
     .coupon-copy strong { color:var(--forest); }
     .coupon-note {
-      margin-top:14px;
+      margin-top:13px;
       color:#7a6a51;
-      font-size:.92rem;
+      font-size:.88rem;
       line-height:1.55;
       max-width:88%;
     }
@@ -323,6 +324,7 @@
       letter-spacing:.04em;
     }
     .serial-box span:first-child { color:#7c6b50; font-size:.74rem; font-weight:900; }
+    .serial-box-wide { max-width:350px; }
     .brand-side-top {
       display:flex;
       align-items:center;
@@ -363,9 +365,24 @@
       object-fit:contain;
       filter:saturate(.96) contrast(1.04);
     }
+    .brand-divider {
+      width:72px;
+      height:2px;
+      margin:0 auto 14px;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(233,213,173,.1), rgba(233,213,173,.9), rgba(233,213,173,.1));
+      box-shadow:0 0 14px rgba(233,213,173,.15);
+    }
+    .side-note {
+      margin-top:12px;
+      text-align:center;
+      color:rgba(255,248,235,.72);
+      font-size:.8rem;
+      line-height:1.5;
+    }
     .side-heading {
       text-align:center;
-      margin:0 0 14px;
+      margin:0 0 12px;
       color:#fff7e8;
       font-size:1rem;
       font-weight:800;
@@ -379,7 +396,6 @@
       letter-spacing:.16em;
       text-transform:uppercase;
     }
-    .venue-thumb,
     .qr-box,
     .auth-card,
     .summary-card {
@@ -389,21 +405,8 @@
       backdrop-filter:blur(10px);
       box-shadow:0 10px 22px rgba(0,0,0,.12);
     }
-    .venue-thumb {
-      width:100%;
-      height:96px;
-      overflow:hidden;
-      margin-bottom:14px;
-    }
-    .venue-thumb img {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-      filter:saturate(.92) contrast(1.02);
-    }
     .qr-box {
-      padding:16px;
+      padding:18px 16px;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -499,7 +502,7 @@
     }
     .auth-card,
     .summary-card {
-      padding:16px;
+      padding:18px 16px;
     }
     .auth-card {
       margin-bottom:12px;
@@ -620,7 +623,6 @@
         height:74px;
         font-size:.62rem;
       }
-      .venue-thumb { height:116px; }
     }
     @media (max-width: 640px) {
       .voucher-view-shell { padding:18px 12px 30px; }
@@ -692,8 +694,7 @@
                   <div class="coupon-copy" id="frontDescription">Present this voucher at <strong>AROONSAWAT</strong> to enjoy one complimentary drink.</div>
                   <div class="coupon-note" id="frontNote">Valid for one selected beverage only. Present this voucher before ordering and enjoy a premium coffee moment.</div>
                   <div class="coupon-meta">
-                    <div class="pill-box" id="displayNo">NO. -</div>
-                    <div class="serial-box"><span>Voucher Code</span><span id="voucherCodeText">-</span></div>
+                    <div class="serial-box serial-box-wide"><span>Voucher Code</span><span id="voucherCodeText">-</span></div>
                   </div>
                 </div>
                 <div class="panel-side">
@@ -704,14 +705,13 @@
                   <div class="brand-medallion">
                     <img src="assets/front_logo_crop.png" alt="Brand logo">
                   </div>
-                  <p class="side-heading">Signature Coffee Card<small>Elegant redemption card</small></p>
-                  <div class="venue-thumb">
-                    <img src="assets/front_venue_crop.png" alt="Venue reference">
-                  </div>
+                  <div class="brand-divider"></div>
+                  <p class="side-heading">Complimentary Beverage<small>crafted coffee moment</small></p>
                   <div class="qr-box">
                     <div id="qrcode"></div>
-                    <div class="qr-caption">Show this QR code together with the voucher code at the counter when redeeming.</div>
+                    <div class="qr-caption">Present this QR code together with the voucher code at the counter when redeeming.</div>
                   </div>
+                  <div class="side-note">One-time redemption · Valid for selected beverage only</div>
                 </div>
               </div>
             </div>
@@ -826,8 +826,7 @@
       document.getElementById('frontTitleSmall').textContent = data.voucher_title_small || 'Complimentary';
       document.getElementById('frontTitleBig').textContent = data.voucher_title_big || '1 DRINK';
       document.getElementById('frontDescription').innerHTML = (data.voucher_description || 'Present this voucher at <strong>AROONSAWAT</strong> to enjoy one complimentary drink.').replace('AROONSAWAT', '<strong>AROONSAWAT</strong>');
-      document.getElementById('frontNote').textContent = 'Valid for one selected beverage only. Present this voucher before ordering and enjoy a premium coffee moment.';
-      document.getElementById('displayNo').textContent = `NO. ${data.display_no || data.internal_no || '-'}`;
+      document.getElementById('frontNote').textContent = 'Valid for one selected beverage only. Present this voucher before ordering for a smooth premium coffee experience.';
       document.getElementById('voucherCodeText').textContent = `${data.voucher_code || '-'}`;
       document.getElementById('validDateValue').textContent = data.validity_label === 'จนกว่าจะใช้' ? 'Until Redeemed' : formatDate(data.expiry_date);
       document.getElementById('issuedByValue').textContent = data.issued_by_name || '-';

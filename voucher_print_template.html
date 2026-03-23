@@ -5,106 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Laya Voucher Print Template</title>
   <style>
-    :root { --card-w: 86mm; --card-h: 54mm; --accent: #1f6f78; }
+    :root { --card-w: 86mm; --card-h: 54mm; --forest:#12392f; --forest-2:#0c2922; --cream:#f7f1e5; --gold:#c6a56c; }
     * { box-sizing: border-box; }
-    body { margin:0; padding:24px; font-family:Arial, Helvetica, sans-serif; background:#f3f5f7; color:#222; }
+    body { margin:0; padding:24px; font-family:Arial, Helvetica, sans-serif; background:#edf1ef; color:#1d2d35; }
     .toolbar { max-width:1100px; margin:0 auto 16px; display:flex; gap:10px; flex-wrap:wrap; }
-    .toolbar button { border:0; border-radius:10px; padding:10px 14px; font-size:14px; cursor:pointer; background:#111827; color:#fff; }
+    .toolbar button { border:0; border-radius:10px; padding:10px 14px; font-size:14px; cursor:pointer; background:#12392f; color:#fff; }
     .sheet { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit, minmax(330px,1fr)); gap:24px; align-items:start; }
-    .voucher-card { width:var(--card-w); min-height:var(--card-h); background:#fff; border-radius:4px; box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:hidden; border:1px solid #ececec; transform-origin:top left; zoom:1.35; }
-    .front,.back { padding:4.5mm; position:relative; }
-    .front-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:4mm; min-height:calc(var(--card-h) - 9mm); }
-    .headline-small { font-size:4.1mm; color:#3c3c3c; margin-bottom:.5mm; }
-    .headline-big { font-size:12mm; line-height:.92; font-weight:700; margin:0 0 2mm; }
-    .front-body { font-size:3.2mm; line-height:1.35; color:#444; margin-bottom:2.2mm; }
-    .front-note { font-size:2.7mm; color:#666; margin-bottom:3mm; }
-    .voucher-no { display:inline-block; border:.35mm solid #bdbdbd; padding:1.2mm 2.5mm; font-size:4.6mm; font-weight:700; color:#505050; margin-top:auto; }
-    .brand-wrap { display:flex; flex-direction:column; gap:3mm; align-items:center; }
-    .brand-logo { width:26mm; height:26mm; border-radius:50%; border:.3mm dashed #9ec7c6; display:flex; align-items:center; justify-content:center; background:#fff; padding:2mm; overflow:hidden; }
-    .brand-logo img { width:100%; height:100%; object-fit:contain; }
-    .venue-photo { width:100%; height:24mm; border:.3mm solid #d5d5d5; background:linear-gradient(135deg, #f3efe7, #dfd2bc); display:flex; align-items:center; justify-content:center; text-align:center; color:#7c6b55; font-size:3mm; padding:2mm; }
-    .back-grid { display:grid; grid-template-columns:1fr 26mm; gap:4mm; min-height:calc(var(--card-h) - 9mm); }
-    .fill-line { margin-bottom:3mm; }
-    .fill-line .label { font-size:3.8mm; font-weight:700; color:#555; display:inline-block; min-width:22mm; }
-    .line { display:inline-block; width:calc(100% - 24mm); border-bottom:.3mm solid #cfcfcf; height:4mm; vertical-align:bottom; }
-    .terms-title { font-size:3.5mm; font-style:italic; font-weight:700; margin:1mm 0 1mm; color:#444; }
-    .terms { margin:0; padding-left:4mm; font-size:2.9mm; line-height:1.45; color:#444; }
-    .auth-box { border:.3mm solid #d0d0d0; height:29mm; position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:2mm; }
-    .auth-tag { position:absolute; top:-.5mm; left:50%; transform:translateX(-50%); background:#4a4a4a; color:#fff; font-size:2.4mm; padding:.8mm 2mm; }
-    .signature { width:100%; height:13mm; display:flex; align-items:center; justify-content:center; }
-    .signature img { width:100%; height:100%; object-fit:contain; }
-    .gm-name,.gm-title { text-align:center; line-height:1.15; }
-    .gm-name { font-size:2.5mm; color:#444; margin-top:1mm; }
-    .gm-title { font-size:2.5mm; color:#666; }
+    .voucher-card { width:var(--card-w); min-height:var(--card-h); border-radius:7mm; overflow:hidden; transform-origin:top left; zoom:1.3; box-shadow:0 10px 28px rgba(0,0,0,.10); border:0.35mm solid rgba(18,57,47,.12); }
+    .front,.back { position:relative; }
+    .front-grid,.back-grid { display:grid; grid-template-columns:1.3fr .7fr; min-height:var(--card-h); }
+    .main { padding:5.2mm; background:linear-gradient(145deg, #fbf7ef, #efe4d3); }
+    .side { padding:4.8mm; background:linear-gradient(165deg, var(--forest), var(--forest-2)); color:#fff; border-left:0.35mm dashed rgba(198,165,108,.35); }
+    .mini { display:inline-block; padding:1.3mm 2.6mm; border-radius:999px; background:rgba(18,57,47,.08); color:var(--forest); font-size:2.7mm; font-weight:700; text-transform:uppercase; margin-bottom:2.2mm; }
+    .label { color:#8a6d3f; font-size:2.7mm; font-weight:700; letter-spacing:0.7mm; text-transform:uppercase; margin-bottom:1.2mm; }
+    .title { font-size:10.6mm; line-height:.88; font-weight:800; color:#1b2a30; margin:0 0 2.2mm; }
+    .copy { font-size:3.2mm; line-height:1.5; color:#39505c; margin-bottom:2mm; }
+    .note { font-size:2.6mm; line-height:1.5; color:#7a6a51; margin-bottom:3.2mm; }
+    .code-box { display:flex; align-items:center; justify-content:space-between; min-height:9mm; border-radius:4mm; padding:2mm 3mm; background:rgba(255,255,255,.75); border:0.35mm solid rgba(18,57,47,.12); font-weight:700; font-size:3.2mm; }
+    .code-box span:first-child { color:#7c6b50; font-size:2.4mm; letter-spacing:0.4mm; text-transform:uppercase; }
+    .medallion { width:25mm; height:25mm; margin:0 auto 2.5mm; border-radius:50%; background:linear-gradient(145deg, rgba(255,255,255,.98), rgba(245,233,204,.92)); border:0.35mm solid rgba(233,213,173,.55); display:flex; align-items:center; justify-content:center; padding:2mm; }
+    .medallion img { width:100%; height:100%; object-fit:contain; }
+    .divider { width:18mm; height:0.5mm; border-radius:999px; margin:0 auto 2.8mm; background:linear-gradient(90deg, rgba(233,213,173,.1), rgba(233,213,173,.9), rgba(233,213,173,.1)); }
+    .side-title { text-align:center; font-size:3.4mm; font-weight:700; color:#fff7e8; margin:0 0 3mm; }
+    .side-title small { display:block; margin-top:1mm; color:rgba(255,245,228,.72); font-size:2.2mm; letter-spacing:0.5mm; text-transform:uppercase; }
+    .qr-box { border-radius:4.2mm; border:0.35mm solid rgba(233,213,173,.24); background:rgba(255,255,255,.08); padding:3.2mm 2.4mm; text-align:center; }
+    .qr-box img { width:23mm; height:23mm; background:#fff; padding:1.8mm; border-radius:3.5mm; box-shadow:0 2mm 4mm rgba(0,0,0,.15); }
+    .qr-cap { margin-top:2mm; font-size:2.4mm; line-height:1.45; color:rgba(255,248,235,.76); }
+    .back-main { padding:5mm; background:linear-gradient(145deg, #fbf7ef, #efe4d3); }
+    .back-title { margin:0 0 1.4mm; font-size:6.8mm; font-weight:800; color:#1d2c34; }
+    .back-sub { margin:0 0 3mm; font-size:2.7mm; color:#687680; }
+    .detail { display:grid; gap:2.1mm; margin-bottom:3mm; }
+    .row { display:grid; grid-template-columns:19mm 1fr; gap:2mm; padding-bottom:1.4mm; border-bottom:0.3mm dashed rgba(18,57,47,.14); }
+    .row b { font-size:2.4mm; letter-spacing:0.45mm; text-transform:uppercase; color:#8b6b3b; }
+    .row span { font-size:2.9mm; color:#33454f; }
+    .terms-card { border-radius:4mm; padding:2.8mm 3.2mm; background:rgba(255,255,255,.62); border:0.35mm solid rgba(18,57,47,.10); }
+    .terms-card h3,.auth h3,.summary h3 { margin:0 0 2mm; font-size:2.8mm; letter-spacing:0.35mm; text-transform:uppercase; color:#20323a; }
+    .terms-card ul { margin:0; padding-left:4mm; font-size:2.45mm; line-height:1.5; color:#44555f; }
+    .side.back-side { display:flex; flex-direction:column; gap:2.4mm; }
+    .auth,.summary { border-radius:4mm; border:0.35mm solid rgba(233,213,173,.22); background:rgba(255,255,255,.08); padding:2.8mm; }
+    .auth img { width:100%; height:15mm; object-fit:contain; background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.70)); border:0.35mm solid rgba(233,213,173,.26); border-radius:3mm; padding:1.6mm; }
+    .auth .name { margin-top:1.6mm; text-align:center; font-size:2.45mm; color:#fff7e8; font-weight:700; }
+    .auth .role { text-align:center; font-size:2.25mm; color:rgba(255,247,232,.76); }
+    .summary .item { display:flex; justify-content:space-between; gap:2mm; font-size:2.4mm; color:rgba(255,248,235,.82); padding-bottom:1.5mm; margin-bottom:1.5mm; border-bottom:0.3mm dashed rgba(233,213,173,.16); }
+    .summary .item:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
+    .summary .item b { color:#fff; letter-spacing:0.3mm; text-transform:uppercase; font-size:2.15mm; }
     @media print { body { background:#fff; padding:0; } .toolbar { display:none!important; } .sheet { display:block; max-width:none; } .voucher-card { page-break-inside:avoid; box-shadow:none; border:0; zoom:1; margin:0 auto 8mm; } @page { size:A4 portrait; margin:10mm; } }
   </style>
 </head>
 <body>
   <div class="toolbar">
     <button onclick="window.print()">Print / Save PDF</button>
-    <button onclick="fillSample('drink')">Sample: 1 Drink</button>
-    <button onclick="fillSample('coffee')">Sample: Coffee Voucher</button>
   </div>
   <div class="sheet">
     <div class="voucher-card front" id="voucherFront">
       <div class="front-grid">
-        <div style="display:flex;flex-direction:column;">
-          <div class="headline-small" id="frontTitleSmall">COMPLIMENTARY</div>
-          <div class="headline-big" id="frontTitleBig">1 DRINK</div>
-          <div class="front-body" id="frontDescription">Show this voucher at AROONSAWAT<br>to receive 1 complimentary drink<br>(Hot Coffee, Iced Coffee, or Soft Drink)</div>
-          <div class="front-note" id="frontCashNote">* This voucher cannot be exchanged for cash.</div>
-          <div class="voucher-no" id="voucherNo">NO. AR20250352</div>
+        <div class="main">
+          <div class="mini">issued</div>
+          <div class="label">Complimentary</div>
+          <div class="title">1 DRINK</div>
+          <div class="copy">Present this voucher at <b>AROONSAWAT</b> to enjoy one complimentary drink.</div>
+          <div class="note">Valid for one selected beverage only. Present this voucher before ordering for a smooth premium coffee experience.</div>
+          <div class="code-box"><span>Voucher Code</span><span>E74A-9Y9B-2D97</span></div>
         </div>
-        <div class="brand-wrap">
-          <div class="brand-logo" id="brandLogo"><img src="assets/front_logo_crop.png" alt="Brand logo"></div>
-          <div class="venue-photo" id="venuePhoto">Venue / outlet image</div>
+        <div class="side">
+          <div class="medallion"><img src="assets/front_logo_crop.png" alt="Brand logo"></div>
+          <div class="divider"></div>
+          <div class="side-title">Complimentary Beverage<small>crafted coffee moment</small></div>
+          <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=E74A-9Y9B-2D97" alt="QR Code">
+            <div class="qr-cap">Present this QR code together with the voucher code at the counter when redeeming.</div>
+          </div>
         </div>
       </div>
     </div>
+
     <div class="voucher-card back" id="voucherBack">
       <div class="back-grid">
-        <div>
-          <div class="fill-line"><span class="label">VALID DATE:</span><span class="line"></span></div>
-          <div class="fill-line"><span class="label">ISSUED BY:</span><span class="line"></span></div>
-          <div class="fill-line"><span class="label">REASON:</span><span class="line"></span></div>
-          <div class="terms-title">Terms &amp; Conditions</div>
-          <ul class="terms">
-            <li>This voucher is redeemable only at Aroonsawat.</li>
-            <li>Must be presented to staff before placing an order.</li>
-            <li>This voucher can be used only for the drink specified on the voucher.</li>
-            <li>Cannot be combined with other promotions, discounts, or special offers.</li>
-            <li>This voucher is non-transferable, non-refundable, and cannot be exchanged for cash.</li>
-            <li>Management reserves the right to amend these terms and conditions without prior notice.</li>
-          </ul>
+        <div class="back-main">
+          <div class="label">Back Side</div>
+          <div class="back-title">Voucher Policy</div>
+          <div class="back-sub">ข้อกำหนดการใช้งานคูปองและข้อมูลอ้างอิงสำหรับการ Redeem</div>
+          <div class="detail">
+            <div class="row"><b>Valid Until</b><span>31/12/2026</span></div>
+            <div class="row"><b>Issued By</b><span>Duty Manager</span></div>
+            <div class="row"><b>Reason</b><span>Guest recovery</span></div>
+          </div>
+          <div class="terms-card">
+            <h3>Terms &amp; Conditions</h3>
+            <ul>
+              <li>This voucher is redeemable only at Aroonsawat.</li>
+              <li>Please present the QR code and voucher code to staff before ordering.</li>
+              <li>This voucher is valid only for the beverage specified in the voucher description.</li>
+              <li>It cannot be combined with promotions, discounts, or other special offers.</li>
+              <li>This voucher is non-transferable, non-refundable, and has no cash value.</li>
+            </ul>
+          </div>
         </div>
-        <div class="auth-box">
-          <div class="auth-tag">AUTHORIZE BY:</div>
-          <div class="signature" id="signatureBox"><img src="assets/back_signature_crop.png" alt="Signature"></div>
-          <div class="gm-name" id="gmName">Nanthaphat Santisaksakul</div>
-          <div class="gm-title" id="gmTitle">General Manager</div>
+        <div class="side back-side">
+          <div class="auth">
+            <h3>Authorization</h3>
+            <img src="assets/back_signature_crop.png" alt="Authorized signature">
+            <div class="name">Nanthaphat Santisaksakul</div>
+            <div class="role">General Manager</div>
+          </div>
+          <div class="summary">
+            <h3>Voucher Summary</h3>
+            <div class="item"><b>Code</b><span>E74A-9Y9B-2D97</span></div>
+            <div class="item"><b>Guest</b><span>Guest Name</span></div>
+            <div class="item"><b>Outlet</b><span>Aroonsawat</span></div>
+            <div class="item"><b>Status</b><span>Issued</span></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-  <script>
-    const samples = {
-      drink: { small:'COMPLIMENTARY', big:'1 DRINK', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary drink<br>(Hot Coffee, Iced Coffee, or Soft Drink)', note:'* This voucher cannot be exchanged for cash.', no:'NO. AR20250352', logo:'', photo:'Outlet photo', gmSignature:'', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' },
-      coffee: { small:'COMPLIMENTARY', big:'1 COFFEE', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary coffee<br>(Hot or Iced)', note:'* Valid for selected menu only.', no:'NO. AR20250399', logo:'COFFEE / LOGO', photo:'Coffee counter image', gmSignature:'', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' }
-    };
-    function fillSample(key) {
-      const s = samples[key];
-      document.getElementById('frontTitleSmall').innerHTML = s.small;
-      document.getElementById('frontTitleBig').innerHTML = s.big;
-      document.getElementById('frontDescription').innerHTML = s.description;
-      document.getElementById('frontCashNote').innerHTML = s.note;
-      document.getElementById('voucherNo').innerHTML = s.no;
-      if (s.logo) document.getElementById('brandLogo').innerHTML = s.logo;
-      document.getElementById('venuePhoto').innerHTML = s.photo;
-      if (s.gmSignature) document.getElementById('signatureBox').innerHTML = s.gmSignature;
-      document.getElementById('gmName').innerHTML = s.gmName;
-      document.getElementById('gmTitle').innerHTML = s.gmTitle;
-    }
-    fillSample('drink');
-  </script>
 </body>
 </html>
