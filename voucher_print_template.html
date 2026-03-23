@@ -20,7 +20,8 @@
     .front-note { font-size:2.7mm; color:#666; margin-bottom:3mm; }
     .voucher-no { display:inline-block; border:.35mm solid #bdbdbd; padding:1.2mm 2.5mm; font-size:4.6mm; font-weight:700; color:#505050; margin-top:auto; }
     .brand-wrap { display:flex; flex-direction:column; gap:3mm; align-items:center; }
-    .brand-logo { width:26mm; height:26mm; border-radius:50%; border:.3mm dashed #9ec7c6; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--accent); font-size:3mm; font-weight:700; padding:2mm; }
+    .brand-logo { width:26mm; height:26mm; border-radius:50%; border:.3mm dashed #9ec7c6; display:flex; align-items:center; justify-content:center; background:#fff; padding:2mm; overflow:hidden; }
+    .brand-logo img { width:100%; height:100%; object-fit:contain; }
     .venue-photo { width:100%; height:24mm; border:.3mm solid #d5d5d5; background:linear-gradient(135deg, #f3efe7, #dfd2bc); display:flex; align-items:center; justify-content:center; text-align:center; color:#7c6b55; font-size:3mm; padding:2mm; }
     .back-grid { display:grid; grid-template-columns:1fr 26mm; gap:4mm; min-height:calc(var(--card-h) - 9mm); }
     .fill-line { margin-bottom:3mm; }
@@ -30,7 +31,8 @@
     .terms { margin:0; padding-left:4mm; font-size:2.9mm; line-height:1.45; color:#444; }
     .auth-box { border:.3mm solid #d0d0d0; height:29mm; position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:2mm; }
     .auth-tag { position:absolute; top:-.5mm; left:50%; transform:translateX(-50%); background:#4a4a4a; color:#fff; font-size:2.4mm; padding:.8mm 2mm; }
-    .signature { width:100%; height:13mm; display:flex; align-items:center; justify-content:center; font-size:7mm; color:#2857c5; font-family:"Brush Script MT", cursive; transform:rotate(-3deg); }
+    .signature { width:100%; height:13mm; display:flex; align-items:center; justify-content:center; }
+    .signature img { width:100%; height:100%; object-fit:contain; }
     .gm-name,.gm-title { text-align:center; line-height:1.15; }
     .gm-name { font-size:2.5mm; color:#444; margin-top:1mm; }
     .gm-title { font-size:2.5mm; color:#666; }
@@ -54,7 +56,7 @@
           <div class="voucher-no" id="voucherNo">NO. AR20250352</div>
         </div>
         <div class="brand-wrap">
-          <div class="brand-logo" id="brandLogo">LOGO / BRAND</div>
+          <div class="brand-logo" id="brandLogo"><img src="assets/front_logo_crop.png" alt="Brand logo"></div>
           <div class="venue-photo" id="venuePhoto">Venue / outlet image</div>
         </div>
       </div>
@@ -77,7 +79,7 @@
         </div>
         <div class="auth-box">
           <div class="auth-tag">AUTHORIZE BY:</div>
-          <div class="signature" id="signatureBox">GM</div>
+          <div class="signature" id="signatureBox"><img src="assets/back_signature_crop.png" alt="Signature"></div>
           <div class="gm-name" id="gmName">Nanthaphat Santisaksakul</div>
           <div class="gm-title" id="gmTitle">General Manager</div>
         </div>
@@ -86,8 +88,8 @@
   </div>
   <script>
     const samples = {
-      drink: { small:'COMPLIMENTARY', big:'1 DRINK', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary drink<br>(Hot Coffee, Iced Coffee, or Soft Drink)', note:'* This voucher cannot be exchanged for cash.', no:'NO. AR20250352', logo:'AROONSAWAT / LOGO', photo:'Outlet photo', gmSignature:'GM', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' },
-      coffee: { small:'COMPLIMENTARY', big:'1 COFFEE', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary coffee<br>(Hot or Iced)', note:'* Valid for selected menu only.', no:'NO. AR20250399', logo:'COFFEE / LOGO', photo:'Coffee counter image', gmSignature:'GM', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' }
+      drink: { small:'COMPLIMENTARY', big:'1 DRINK', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary drink<br>(Hot Coffee, Iced Coffee, or Soft Drink)', note:'* This voucher cannot be exchanged for cash.', no:'NO. AR20250352', logo:'', photo:'Outlet photo', gmSignature:'', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' },
+      coffee: { small:'COMPLIMENTARY', big:'1 COFFEE', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary coffee<br>(Hot or Iced)', note:'* Valid for selected menu only.', no:'NO. AR20250399', logo:'COFFEE / LOGO', photo:'Coffee counter image', gmSignature:'', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' }
     };
     function fillSample(key) {
       const s = samples[key];
@@ -96,9 +98,9 @@
       document.getElementById('frontDescription').innerHTML = s.description;
       document.getElementById('frontCashNote').innerHTML = s.note;
       document.getElementById('voucherNo').innerHTML = s.no;
-      document.getElementById('brandLogo').innerHTML = s.logo;
+      if (s.logo) document.getElementById('brandLogo').innerHTML = s.logo;
       document.getElementById('venuePhoto').innerHTML = s.photo;
-      document.getElementById('signatureBox').innerHTML = s.gmSignature;
+      if (s.gmSignature) document.getElementById('signatureBox').innerHTML = s.gmSignature;
       document.getElementById('gmName').innerHTML = s.gmName;
       document.getElementById('gmTitle').innerHTML = s.gmTitle;
     }

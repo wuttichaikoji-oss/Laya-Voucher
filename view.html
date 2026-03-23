@@ -345,8 +345,8 @@
       text-transform:uppercase;
     }
     .brand-medallion {
-      width:88px;
-      height:88px;
+      width:118px;
+      height:118px;
       border-radius:999px;
       display:flex;
       align-items:center;
@@ -354,14 +354,14 @@
       background:linear-gradient(145deg, rgba(255,255,255,.98), rgba(245,233,204,.92));
       border:1px solid rgba(233,213,173,.60);
       box-shadow:0 12px 22px rgba(0,0,0,.16), inset 0 0 0 10px rgba(24,80,65,.06);
-      margin:2px auto 14px;
-      padding:14px;
+      margin:2px auto 16px;
+      padding:12px;
     }
     .brand-medallion img {
       width:100%;
       height:100%;
       object-fit:contain;
-      filter:saturate(.85) contrast(1.02);
+      filter:saturate(.96) contrast(1.04);
     }
     .side-heading {
       text-align:center;
@@ -506,19 +506,26 @@
     }
     .auth-sign {
       width:100%;
-      height:118px;
+      height:124px;
       object-fit:contain;
       border-radius:14px;
-      background:rgba(255,255,255,.92);
-      border:1px solid rgba(233,213,173,.28);
-      padding:8px;
+      background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.70));
+      border:1px solid rgba(233,213,173,.26);
+      padding:10px 8px;
     }
     .auth-note {
-      margin-top:9px;
-      color:rgba(255,247,232,.72);
-      font-size:.8rem;
+      margin-top:10px;
+      color:rgba(255,247,232,.78);
+      font-size:.82rem;
       text-align:center;
-      line-height:1.45;
+      line-height:1.5;
+    }
+    .auth-note strong {
+      display:block;
+      color:#fff7e8;
+      letter-spacing:.03em;
+      font-size:.88rem;
+      margin-bottom:2px;
     }
     .summary-grid {
       display:grid;
@@ -691,13 +698,13 @@
                 </div>
                 <div class="panel-side">
                   <div class="brand-side-top">
-                    <span class="brand-chip">Luxury Café</span>
+                    <span class="brand-chip">Starbucks Style</span>
                     <span class="brand-chip">QR Ready</span>
                   </div>
                   <div class="brand-medallion">
                     <img src="assets/front_logo_crop.png" alt="Brand logo">
                   </div>
-                  <p class="side-heading">Coffee Experience<small>Elegant redemption card</small></p>
+                  <p class="side-heading">Signature Coffee Card<small>Elegant redemption card</small></p>
                   <div class="venue-thumb">
                     <img src="assets/front_venue_crop.png" alt="Venue reference">
                   </div>
@@ -739,7 +746,7 @@
                   <div class="auth-card">
                     <h3>Authorization</h3>
                     <img class="auth-sign" src="assets/back_signature_crop.png" alt="Authorized signature">
-                    <div class="auth-note">Authorized signature reference for premium beverage voucher</div>
+                    <div class="auth-note"><strong>Nanthaphat Santisaksakul</strong>General Manager</div>
                   </div>
                   <div class="summary-card">
                     <h3>Voucher Summary</h3>
@@ -751,7 +758,7 @@
                       <div class="summary-item"><strong>Status</strong><span id="summaryStatus">-</span></div>
                     </div>
                   </div>
-                  <div class="back-side-stamp">Reserve Coffee Selection</div>
+                  <div class="back-side-stamp">Premium Coffee Authorization</div>
                 </div>
               </div>
             </div>
