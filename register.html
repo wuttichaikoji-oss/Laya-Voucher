@@ -10,9 +10,8 @@
   <div class="container">
     <h1>Register</h1>
     <div class="card">
-      <input id="employeeId" type="text" placeholder="รหัสพนักงาน เช่น FB001" />
+      <input id="employeeId" type="text" placeholder="รหัสพนักงาน เช่น FB001 หรือ 300204" />
       <input id="name" type="text" placeholder="ชื่อพนักงาน" />
-      <input id="email" type="email" placeholder="Email" />
       <select id="department">
         <option value="FB">FB</option>
         <option value="FO">FO</option>
@@ -23,6 +22,7 @@
       <input id="confirmPassword" type="password" placeholder="ยืนยันรหัสผ่าน" />
       <button id="registerBtn">Create Account</button>
       <p id="msg"></p>
+      <p class="ref">ระบบจะสร้างอีเมลภายในให้อัตโนมัติจากรหัสพนักงาน</p>
       <p><a href="login.html">กลับไปหน้า Login</a></p>
     </div>
   </div>
@@ -31,7 +31,8 @@
     import { auth, db } from "./firebase-config.js";
     import {
       createUserWithEmailAndPassword,
-      updateProfile
+      updateProfile,
+      signOut
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
     import {
       collection,
@@ -46,13 +47,16 @@
 
     const employeeIdEl = document.getElementById("employeeId");
     const nameEl = document.getElementById("name");
-    const emailEl = document.getElementById("email");
     const departmentEl = document.getElementById("department");
     const outletEl = document.getElementById("outlet");
     const passwordEl = document.getElementById("password");
     const confirmPasswordEl = document.getElementById("confirmPassword");
     const registerBtn = document.getElementById("registerBtn");
     const msg = document.getElementById("msg");
+
+    function makeInternalEmail(employeeId) {
+      return `${employeeId.toLowerCase()}@laya-voucher.local`;
+    }
 
     async function employeeIdExists(employeeId) {
       const q = query(
@@ -67,13 +71,13 @@
     registerBtn.addEventListener("click", async () => {
       const employeeId = employeeIdEl.value.trim().toUpperCase();
       const name = nameEl.value.trim();
-      const email = emailEl.value.trim();
       const department = departmentEl.value;
       const outlet = outletEl.value.trim();
       const password = passwordEl.value;
       const confirmPassword = confirmPasswordEl.value;
+      const email = makeInternalEmail(employeeId);
 
-      if (!employeeId || !name || !email || !department || !outlet || !password || !confirmPassword) {
+      if (!employeeId || !name || !department || !outlet || !password || !confirmPassword) {
         msg.textContent = "กรุณากรอกข้อมูลให้ครบ";
         return;
       }
@@ -123,6 +127,10 @@
           created_at: serverTimestamp(),
           updated_at: serverTimestamp()
         });
+
+        try {
+          await signOut(auth);
+        } catch {}
 
         msg.textContent = "สมัครสมาชิกสำเร็จ กำลังพาไปหน้า Login...";
         setTimeout(() => {

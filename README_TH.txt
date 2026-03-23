@@ -43,3 +43,9 @@ Laya Voucher Full Starter Repo
 - login.html เปลี่ยนเป็น lookup จาก /employee_login_index/{employee_id}
 - register.html จะสร้างทั้ง /users/{uid} และ /employee_login_index/{employee_id}
 - เพิ่มไฟล์ firestore.rules.txt สำหรับนำไปวางใน Firebase Console > Firestore Rules
+
+
+อัปเดตล่าสุด:
+- register.html เอาช่อง Email ออกแล้ว
+- ระบบจะสร้างอีเมลภายในอัตโนมัติจากรหัสพนักงาน เช่น 300204@laya-voucher.local
+- login ยังใช้รหัสพนักงาน + รหัสผ่านเหมือนเดิม
