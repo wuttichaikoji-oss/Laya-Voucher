@@ -7,15 +7,18 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 </head>
-<body>
-  <div class="container">
-    <h1>Voucher Detail</h1>
-    <div class="card no-print">
+<body class="app-page">
+  <div class="container app-shell">
+    <section class="page-header"><div class="page-header-row"><div><span class="soft-badge">Voucher Detail</span><h1>Voucher Detail</h1><p class="page-subtitle">ดูรายละเอียดสถานะ ประวัติการใช้งาน และจัดการ Voucher รายใบได้แบบครบถ้วน</p></div></div></section>
+    <div class="card section-card no-print">
+      <h2>Load Voucher</h2>
+      <p class="page-subtitle">ใส่ Voucher Code เพื่อเปิดรายละเอียดแบบเต็ม รวมถึง timeline และปุ่มจัดการ</p>
+      <div style="height:10px"></div>
       <input id="voucherInput" type="text" placeholder="ใส่ Voucher Code เช่น K7MP-X4RD-9QHL" />
-      <button id="loadBtn">Load Voucher</button>
+      <div class="inline-actions"><button id="loadBtn">Load Voucher</button></div>
     </div>
 
-    <div class="card hidden" id="detailCard">
+    <div class="card section-card hidden" id="detailCard">
       <div class="voucher-head">
         <div>
           <h2 id="voucherCodeText">-</h2>
@@ -45,7 +48,7 @@
       <div class="detail-actions no-print" id="detailActions"></div>
     </div>
 
-    <div class="card" id="timelineCard">
+    <div class="card section-card" id="timelineCard">
       <h3>Timeline</h3>
       <div id="timelineBody">ยังไม่มีประวัติ</div>
     </div>
@@ -72,7 +75,7 @@
       collection, query, where, getDocs, doc, runTransaction, serverTimestamp, addDoc, orderBy
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    const { user, profile } = await requireRole(["staff", "supervisor", "manager", "admin"]);
+    const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
     renderNav(profile);
 
     const params = new URLSearchParams(window.location.search);
@@ -140,7 +143,7 @@
       extraInfoBox.innerHTML = html;
     }
     function canCancel(data) { return ["supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued"; }
-    function canRedeem(data) { return ["staff", "supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued"; }
+    function canRedeem(data) { return ["supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued"; }
 
     function renderActions(data) {
       const status = getDisplayStatus(data);
@@ -236,6 +239,9 @@
           action_at: serverTimestamp(),
           action_by_uid: user.uid,
           action_by_name: profile.name,
+          department: currentData.department || "",
+          outlet: currentData.outlet || "",
+          action_by_role: profile.role,
           note: `Redeemed by ${profile.name}`
         });
 
@@ -287,6 +293,9 @@
           action_at: serverTimestamp(),
           action_by_uid: user.uid,
           action_by_name: profile.name,
+          department: currentData.department || "",
+          outlet: currentData.outlet || "",
+          action_by_role: profile.role,
           note: reason
         });
 

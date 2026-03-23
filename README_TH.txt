@@ -52,3 +52,14 @@ Laya Voucher Full Starter Repo
 
 
 แก้ล่าสุด: register.html เช็ก employee_id ซ้ำจาก employee_login_index แทน /users เพื่อให้สอดคล้องกับ Rules
+
+
+อัปเดต role dashboard + permissions:
+- dashboard.html เปิดให้ staff/supervisor/manager/admin เข้าได้ โดย scope แตกต่างตาม role
+- staff เห็นเฉพาะ outlet ของตัวเอง (หรือ voucher ที่ตัวเองออก หากยังไม่กำหนด outlet)
+- supervisor / manager เห็นเฉพาะ department ของตัวเอง
+- admin เห็นทุก department / outlet
+- issue.html ล็อก outlet อัตโนมัติสำหรับ role staff
+- auth-guard.js เพิ่มลิงก์ Dashboard ให้ทุก role
+- admin-users.html ล้างตัวอักษรหลุด \n ในฟอร์มแล้ว
+- firestore.rules.txt ปรับให้สอดคล้องกับ role dashboard เวอร์ชันนี้

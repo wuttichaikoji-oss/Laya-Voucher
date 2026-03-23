@@ -6,12 +6,16 @@
   <title>Admin Users</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <h1>Admin - User Profiles</h1>
+<body class="app-page">
+  <div class="container app-shell">
+    <section class="page-header"><div class="page-header-row"><div><span class="soft-badge">Admin Tools</span><h1>Admin User Profiles</h1><p class="page-subtitle">จัดการ role, department, outlet และสถานะ active ของผู้ใช้งานในระบบ</p></div></div></section>
 
-    <div class="card">
-      <input id="uid" placeholder="Firebase Auth UID" />\n      <input id="employeeId" placeholder="Employee ID เช่น FB001" />
+    <div class="card section-card">
+      <h2>User Profile Editor</h2>
+      <p class="page-subtitle">ใช้สำหรับโหลดและแก้ไขโปรไฟล์ผู้ใช้งานตาม UID ของ Firebase Auth</p>
+      <div style="height:10px"></div>
+      <input id="uid" placeholder="Firebase Auth UID" />
+      <input id="employeeId" placeholder="Employee ID เช่น FB001" />
       <input id="name" placeholder="Full Name" />
       <input id="email" type="email" placeholder="Email" />
       <select id="role">
@@ -27,12 +31,12 @@
       </select>
       <input id="outlet" placeholder="Outlet เช่น The Taste" />
       <label class="check-row"><input id="active" type="checkbox" checked /> Active</label>
-      <button id="saveBtn">Save Profile</button>
-      <button id="loadBtn" type="button">Load Profile</button>
+      <div class="inline-actions"><button id="saveBtn">Save Profile</button>
+      <button id="loadBtn" type="button">Load Profile</button></div>
       <p id="msg"></p>
     </div>
 
-    <div class="nav" id="navMenu"></div>
+    <div class="nav no-print" id="navMenu"></div>
   </div>
 
   <script type="module">
@@ -43,7 +47,8 @@
     const { profile } = await requireRole(["admin"]);
     renderNav(profile);
 
-    const uidEl = document.getElementById("uid");\n    const employeeIdEl = document.getElementById("employeeId");
+    const uidEl = document.getElementById("uid");
+    const employeeIdEl = document.getElementById("employeeId");
     const nameEl = document.getElementById("name");
     const emailEl = document.getElementById("email");
     const roleEl = document.getElementById("role");
@@ -60,7 +65,8 @@
       const snap = await getDoc(doc(db, "users", uid));
       if (!snap.exists()) return msg.textContent = "ยังไม่มี profile นี้";
       const data = snap.data();
-      employeeIdEl.value = data.employee_id || "";\n      nameEl.value = data.name || "";
+      employeeIdEl.value = data.employee_id || "";
+      nameEl.value = data.name || "";
       emailEl.value = data.email || "";
       roleEl.value = data.role || "staff";
       departmentEl.value = data.department || "FB";
@@ -73,7 +79,8 @@
       const uid = uidEl.value.trim();
       if (!uid) return msg.textContent = "กรุณาใส่ UID";
       await setDoc(doc(db, "users", uid), {
-        employee_id: employeeIdEl.value.trim().toUpperCase(),\n        name: nameEl.value.trim(),
+        employee_id: employeeIdEl.value.trim().toUpperCase(),
+        name: nameEl.value.trim(),
         email: emailEl.value.trim(),
         role: roleEl.value,
         department: departmentEl.value,

@@ -12,6 +12,12 @@ function hasAccess(role, allowedRoles = []) {
   return allowedRoles.includes(role);
 }
 
+export function getHomeByRole(profile) {
+  if (!profile || !profile.role) return "login.html";
+  if (profile.role === "staff") return "redeem.html";
+  return "dashboard.html";
+}
+
 async function logoutAndGoLogin(message = "") {
   if (message) alert(message);
   try { await signOut(auth); } catch {}
@@ -43,7 +49,7 @@ export async function requireRole(allowedRoles = []) {
 
         if (!hasAccess(profile.role, allowedRoles)) {
           alert("คุณไม่มีสิทธิ์เข้าหน้านี้");
-          window.location.href = "dashboard.html";
+          window.location.href = getHomeByRole(profile);
           return;
         }
 
@@ -59,24 +65,45 @@ export function renderNav(profile) {
   const nav = document.getElementById("navMenu");
   if (!nav) return;
 
-  const links = [];
-  if (["staff", "supervisor", "manager", "admin"].includes(profile.role)) {
-    links.push(`<a href="issue.html">Issue</a>`);
-    links.push(`<a href="search.html">Search</a>`);
-    links.push(`<a href="redeem.html">Redeem</a>`);
-    links.push(`<a href="voucher-detail.html">Voucher Detail</a>`);
-  }
+  const currentPage = (window.location.pathname.split("/").pop() || "").toLowerCase();
+  const makeLink = (href, label) => `<a href="${href}" class="${currentPage === href.toLowerCase() ? "active" : ""}">${label}</a>`;
+  const profileName = profile?.name || profile?.employee_id || "User";
+  const profileRole = profile?.role || "staff";
 
-  if (["supervisor", "manager", "admin"].includes(profile.role)) {
-    links.push(`<a href="dashboard.html">Dashboard</a>`);
-  }
+  if (profile.role === "staff") {
+    nav.innerHTML = `
+      <div class="nav-left">
+        <span class="soft-badge">Laya Voucher</span>
+        <span class="role-badge">${profileRole}</span>
+      </div>
+      <div class="nav-right">
+        <span class="ref">${profileName}</span>
+        <button id="logoutBtn" class="nav-btn" type="button">Logout</button>
+      </div>
+    `;
+  } else {
+    const links = [
+      makeLink("dashboard.html", "Dashboard"),
+      makeLink("issue.html", "Issue"),
+      makeLink("search.html", "Search"),
+      makeLink("redeem.html", "Redeem"),
+      makeLink("voucher-detail.html", "Voucher Detail")
+    ];
 
-  if (profile.role === "admin") {
-    links.push(`<a href="admin-users.html">Users</a>`);
-  }
+    if (profile.role === "admin") links.push(makeLink("admin-users.html", "Users"));
 
-  links.push(`<button id="logoutBtn" type="button">Logout</button>`);
-  nav.innerHTML = links.join(" ");
+    nav.innerHTML = `
+      <div class="nav-left">
+        <span class="soft-badge">Laya Voucher</span>
+        <span class="role-badge">${profileRole}</span>
+      </div>
+      <div class="nav-links">${links.join("")}</div>
+      <div class="nav-right">
+        <span class="ref">${profileName}</span>
+        <button id="logoutBtn" class="nav-btn" type="button">Logout</button>
+      </div>
+    `;
+  }
 
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {

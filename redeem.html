@@ -7,19 +7,22 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body>
-  <div class="container">
-    <h1>Redeem Voucher</h1>
-    <div class="card">
+<body class="app-page">
+  <div class="container app-shell">
+    <section class="page-header"><div class="page-header-row"><div><span class="soft-badge">Frontline Use</span><h1>Redeem Voucher</h1><p class="page-subtitle">ตรวจสอบสถานะ Voucher และยืนยันการ Redeem ได้จากการพิมพ์โค้ดหรือสแกน QR</p></div></div></section>
+    <div class="card section-card">
+      <h2>Redeem Checkpoint</h2>
+      <p class="page-subtitle">พิมพ์ Voucher Code หรือใช้กล้องสแกน QR เพื่อดึงข้อมูลการใช้งาน</p>
+      <div style="height:10px"></div>
       <input id="voucherInput" type="text" placeholder="ใส่ Voucher Code เช่น K7MP-X4RD-9QHL" />
-      <button id="checkBtn">Check</button>
+      <div class="inline-actions"><button id="checkBtn">Check</button>
       <button id="startScanBtn" type="button">Start QR Scan</button>
-      <button id="stopScanBtn" type="button">Stop Scan</button>
+      <button id="stopScanBtn" type="button">Stop Scan</button></div>
     </div>
 
-    <div id="reader" class="card hidden"></div>
-    <div id="voucherBox" class="card hidden"></div>
-    <div class="nav" id="navMenu"></div>
+    <div id="reader" class="card section-card hidden"></div>
+    <div id="voucherBox" class="card section-card hidden result-highlight"></div>
+    <div class="nav no-print" id="navMenu"></div>
   </div>
 
   <script type="module">
@@ -159,6 +162,9 @@
           action_at: serverTimestamp(),
           action_by_uid: user.uid,
           action_by_name: profile.name,
+          department: currentData.department || "",
+          outlet: currentData.outlet || "",
+          action_by_role: profile.role,
           note: `Redeemed by ${profile.name}`
         });
 

@@ -6,16 +6,33 @@
   <title>Login - Laya Voucher</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <h1>Login</h1>
-    <div class="card">
+<body class="auth-page">
+  <div class="container auth-shell">
+    <section class="auth-hero">
+      <div>
+        <span class="brand-badge">Laya Resort Phuket</span>
+        <h1 class="auth-title">Laya Voucher System</h1>
+        <p class="auth-subtitle">ระบบจัดการ Voucher สำหรับการออกสิทธิ์ ตรวจสอบ และ Redeem แบบใช้งานจริงในหน้างาน พร้อมแยกสิทธิ์ตาม role</p>
+      </div>
+      <div class="auth-points">
+        <div class="auth-point"><strong>Secure Access</strong><span>Login ด้วยรหัสพนักงานและ role-based permission</span></div>
+        <div class="auth-point"><strong>Fast Operations</strong><span>Issue, Search, Redeem และตรวจสอบสถานะได้รวดเร็ว</span></div>
+        <div class="auth-point"><strong>Clear Tracking</strong><span>ติดตาม reference, timeline และประวัติการใช้งานได้ง่าย</span></div>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <span class="soft-badge">Welcome back</span>
+      <h2>เข้าสู่ระบบ</h2>
+      <p class="page-subtitle">กรอกรหัสพนักงานและรหัสผ่านเพื่อเข้าสู่ระบบตามสิทธิ์ของคุณ</p>
+      <div style="height:18px"></div>
       <input id="employeeId" type="text" placeholder="รหัสพนักงาน" />
       <input id="password" type="password" placeholder="รหัสผ่าน" />
       <button id="loginBtn">Login</button>
       <p id="msg"></p>
+      <p class="ref">บัญชีสมัครใหม่จะเริ่มต้นเป็น staff และเข้าใช้งานหน้า Redeem ได้ทันที</p>
       <p><a href="register.html">สมัครสมาชิกใหม่</a></p>
-    </div>
+    </section>
   </div>
 
   <script type="module">
@@ -28,6 +45,7 @@
       doc,
       getDoc
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    import { getHomeByRole } from "./auth-guard.js";
 
     const employeeIdEl = document.getElementById("employeeId");
     const passwordEl = document.getElementById("password");
@@ -58,7 +76,7 @@
         return;
       }
 
-      window.location.href = "dashboard.html";
+      window.location.href = getHomeByRole(profile);
     });
 
     loginBtn.addEventListener("click", async () => {

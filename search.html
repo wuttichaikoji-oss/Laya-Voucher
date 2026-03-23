@@ -6,14 +6,17 @@
   <title>Search Voucher</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <h1>Search Voucher</h1>
-    <div class="card">
+<body class="app-page">
+  <div class="container app-shell">
+    <section class="page-header"><div class="page-header-row"><div><span class="soft-badge">Lookup</span><h1>Search Voucher</h1><p class="page-subtitle">ค้นหา Voucher อย่างรวดเร็ว ตรวจสอบข้อมูล และยกเลิกสิทธิ์ได้จากหน้าจอเดียว</p></div></div></section>
+    <div class="card section-card">
+      <h2>Quick Search</h2>
+      <p class="page-subtitle">ค้นหาด้วย Voucher Code เพื่อเปิดดูข้อมูลและดำเนินการต่อได้ทันที</p>
+      <div style="height:10px"></div>
       <input id="searchInput" type="text" placeholder="ใส่ Voucher Code เช่น K7MP-X4RD-9QHL" />
-      <button id="searchBtn">Search</button>
+      <div class="inline-actions"><button id="searchBtn">Search</button></div>
     </div>
-    <div id="result" class="card hidden"></div>
+    <div id="result" class="card section-card hidden result-highlight"></div>
     <div id="cancelModal" class="modal hidden">
       <div class="modal-card">
         <h3>Cancel Voucher</h3>
@@ -25,7 +28,7 @@
         </div>
       </div>
     </div>
-    <div class="nav" id="navMenu"></div>
+    <div class="nav no-print" id="navMenu"></div>
   </div>
 
   <script type="module">
@@ -33,7 +36,7 @@
     import { requireRole, renderNav } from "./auth-guard.js";
     import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    const { user, profile } = await requireRole(["staff", "supervisor", "manager", "admin"]);
+    const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
     renderNav(profile);
 
     const searchBtn = document.getElementById("searchBtn");
@@ -94,6 +97,9 @@
           action_at: serverTimestamp(),
           action_by_uid: user.uid,
           action_by_name: profile.name,
+          department: currentData.department || "",
+          outlet: currentData.outlet || "",
+          action_by_role: profile.role,
           note: reason
         });
 

@@ -6,10 +6,26 @@
   <title>Register - Laya Voucher</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <h1>Register</h1>
-    <div class="card">
+<body class="auth-page">
+  <div class="container auth-shell">
+    <section class="auth-hero">
+      <div>
+        <span class="brand-badge">New account setup</span>
+        <h1 class="auth-title">Create Staff Access</h1>
+        <p class="auth-subtitle">สร้างบัญชีจากรหัสพนักงานจริง เพื่อใช้กับระบบ Voucher โดย role เริ่มต้นจะเป็น <strong>staff</strong> และปรับสิทธิ์ภายหลังได้จากหน้า Admin</p>
+      </div>
+      <div class="auth-points">
+        <div class="auth-point"><strong>Employee ID</strong><span>ใช้รหัสพนักงานเป็น index หลักในการเข้าสู่ระบบ</span></div>
+        <div class="auth-point"><strong>Department + Outlet</strong><span>เก็บข้อมูลพื้นฐานไว้เพื่อใช้แยก scope ตามหน่วยงาน</span></div>
+        <div class="auth-point"><strong>Ready for Role Upgrade</strong><span>เปลี่ยนเป็น supervisor, manager หรือ admin ได้ในภายหลัง</span></div>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <span class="soft-badge">Register</span>
+      <h2>สมัครสมาชิกใหม่</h2>
+      <p class="page-subtitle">กรอกข้อมูลให้ครบเพื่อสร้างบัญชีสำหรับใช้งานระบบ</p>
+      <div style="height:18px"></div>
       <input id="employeeId" type="text" placeholder="รหัสพนักงาน เช่น FB001 หรือ 300204" />
       <input id="name" type="text" placeholder="ชื่อพนักงาน" />
       <select id="department">
@@ -24,7 +40,7 @@
       <p id="msg"></p>
       <p class="ref">ระบบจะสร้างอีเมลภายในอัตโนมัติจากรหัสพนักงาน</p>
       <p><a href="login.html">กลับไปหน้า Login</a></p>
-    </div>
+    </section>
   </div>
 
   <script type="module">

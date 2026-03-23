@@ -8,12 +8,19 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-  <div class="container">
-    <h1>Voucher Dashboard</h1>
+<body class="app-page">
+  <div class="container app-shell">
+    <section class="page-header"><div class="page-header-row"><div><span class="soft-badge">Analytics</span><h1 id="dashboardTitle">Voucher Dashboard</h1><p id="scopeText" class="page-subtitle">ดูภาพรวมการใช้งาน Voucher ตามสิทธิ์ของ role พร้อม filter, summary และ export</p></div></div></section>
+    <div class="card section-card result-highlight" id="scopeCard">
+      <h2>Dashboard Scope</h2>
+      <p class="page-subtitle">ระบบจะแสดงข้อมูลตามสิทธิ์ของ role และขอบเขตที่ล็อกไว้ในโปรไฟล์</p>
+      <p id="scopeModeText"></p>
+      <p id="scopeLockText" class="ref"></p>
+    </div>
 
-    <div class="card">
+    <div class="card section-card">
       <h2>Filter</h2>
+      <p class="page-subtitle">ใช้ตัวกรองเพื่อลดช่วงข้อมูลและดูผลลัพธ์ที่ต้องการได้เร็วขึ้น</p>
       <div class="filter-grid">
         <div><label for="dateFrom">Date From</label><input type="date" id="dateFrom" /></div>
         <div><label for="dateTo">Date To</label><input type="date" id="dateTo" /></div>
@@ -55,14 +62,16 @@
       <div class="stat-card"><div class="stat-label">Cancelled</div><div class="stat-value" id="cancelledCount">0</div></div>
     </div>
 
-    <div class="card">
+    <div class="card section-card" id="exportCard">
       <h2>Export Report</h2>
+      <p class="page-subtitle">ส่งออกข้อมูลตาม scope ที่มองเห็นในหน้าปัจจุบัน</p>
       <button id="exportAllBtn">Export All</button>
       <button id="exportIssuedBtn">Export Issued</button>
       <button id="exportRedeemedBtn">Export Redeemed</button>
+      <p id="exportHint" class="ref"></p>
     </div>
 
-    <div class="card">
+    <div class="card section-card">
       <h2>Summary by Outlet</h2>
       <div class="table-wrap">
         <table class="voucher-table">
@@ -72,7 +81,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card section-card">
       <h2>Summary by Staff</h2>
       <div class="table-wrap">
         <table class="voucher-table">
@@ -82,7 +91,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card section-card">
       <h2>Charts</h2>
       <div class="chart-grid">
         <div><h3>By Outlet</h3><canvas id="outletChart"></canvas></div>
@@ -91,7 +100,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card section-card">
       <h2>รายการล่าสุด</h2>
       <div class="table-wrap">
         <table class="voucher-table">
@@ -109,7 +118,7 @@
     import { requireRole, renderNav } from "./auth-guard.js";
     import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    const { profile } = await requireRole(["supervisor", "manager", "admin"]);
+    const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
     renderNav(profile);
 
     const dateFromEl = document.getElementById("dateFrom");
@@ -121,13 +130,21 @@
     const resetFilterBtn = document.getElementById("resetFilterBtn");
     const outletSummaryBody = document.getElementById("outletSummaryBody");
     const staffSummaryBody = document.getElementById("staffSummaryBody");
-
     const totalEl = document.getElementById("totalCount");
     const issuedEl = document.getElementById("issuedCount");
     const redeemedEl = document.getElementById("redeemedCount");
     const expiredEl = document.getElementById("expiredCount");
     const cancelledEl = document.getElementById("cancelledCount");
     const tbody = document.getElementById("recentTableBody");
+    const dashboardTitleEl = document.getElementById("dashboardTitle");
+    const scopeTextEl = document.getElementById("scopeText");
+    const scopeModeTextEl = document.getElementById("scopeModeText");
+    const scopeLockTextEl = document.getElementById("scopeLockText");
+    const exportCard = document.getElementById("exportCard");
+    const exportHint = document.getElementById("exportHint");
+    const exportAllBtn = document.getElementById("exportAllBtn");
+    const exportIssuedBtn = document.getElementById("exportIssuedBtn");
+    const exportRedeemedBtn = document.getElementById("exportRedeemedBtn");
 
     let outletChartInstance = null;
     let staffChartInstance = null;
@@ -139,30 +156,131 @@
       SPA: ["Spa Reception", "Treatment"]
     };
 
-    if (profile.role !== "admin") {
-      departmentFilterEl.value = profile.department || "all";
-      departmentFilterEl.disabled = true;
+    function getScopeConfig() {
+      if (profile.role === "admin") {
+        return {
+          title: "Voucher Dashboard - Admin",
+          summary: "เห็นข้อมูลทุกแผนก ทุก outlet และ export ได้ทั้งหมด",
+          scopeMode: "Admin Scope: All Departments / All Outlets",
+          lockText: "สามารถเลือก Department และ Outlet ได้อิสระ",
+          baseQueryMode: "all",
+          fixedDepartment: "all",
+          fixedOutlet: "all",
+          allowDepartmentFilter: true,
+          allowOutletFilter: true,
+          allowExport: true
+        };
+      }
+
+      if (profile.role === "manager") {
+        return {
+          title: `Voucher Dashboard - ${profile.department || "Department"} Manager`,
+          summary: `เห็นข้อมูลเฉพาะแผนก ${profile.department || "-"} ทุก outlet ในแผนก และ export ได้`,
+          scopeMode: `Manager Scope: Department ${profile.department || "-"}`,
+          lockText: "Department ถูกล็อกตามโปรไฟล์ แต่ยังเลือก Outlet ในแผนกได้",
+          baseQueryMode: "department",
+          fixedDepartment: profile.department || "all",
+          fixedOutlet: "all",
+          allowDepartmentFilter: false,
+          allowOutletFilter: true,
+          allowExport: true
+        };
+      }
+
+      if (profile.role === "supervisor") {
+        return {
+          title: `Voucher Dashboard - ${profile.department || "Department"} Supervisor`,
+          summary: `เห็นข้อมูลเฉพาะแผนก ${profile.department || "-"} ทุก outlet ในแผนก และ export ได้`,
+          scopeMode: `Supervisor Scope: Department ${profile.department || "-"}`,
+          lockText: "Department ถูกล็อกตามโปรไฟล์ แต่ยังเลือก Outlet ในแผนกได้",
+          baseQueryMode: "department",
+          fixedDepartment: profile.department || "all",
+          fixedOutlet: "all",
+          allowDepartmentFilter: false,
+          allowOutletFilter: true,
+          allowExport: true
+        };
+      }
+
+      if (profile.outlet) {
+        return {
+          title: `Voucher Dashboard - ${profile.outlet}`,
+          summary: `เห็นข้อมูลเฉพาะ outlet ${profile.outlet} ของตนเองในแผนก ${profile.department || "-"}`,
+          scopeMode: `Staff Scope: Outlet ${profile.outlet}`,
+          lockText: "Department และ Outlet ถูกล็อกตามโปรไฟล์เพื่อให้เห็นเฉพาะข้อมูลที่เกี่ยวข้อง",
+          baseQueryMode: "outlet",
+          fixedDepartment: profile.department || "all",
+          fixedOutlet: profile.outlet,
+          allowDepartmentFilter: false,
+          allowOutletFilter: false,
+          allowExport: false
+        };
+      }
+
+      return {
+        title: "Voucher Dashboard - My Issued Vouchers",
+        summary: "โปรไฟล์ยังไม่มี outlet จึงแสดงเฉพาะ voucher ที่คุณเป็นผู้ออก",
+        scopeMode: "Staff Scope: My Issued Vouchers",
+        lockText: "ใช้ issued_by_uid เป็นขอบเขตข้อมูลแทน outlet",
+        baseQueryMode: "mine",
+        fixedDepartment: profile.department || "all",
+        fixedOutlet: "all",
+        allowDepartmentFilter: false,
+        allowOutletFilter: false,
+        allowExport: false
+      };
     }
 
-    function populateOutletOptions(department, role) {
+    const scope = getScopeConfig();
+    dashboardTitleEl.textContent = scope.title;
+    scopeTextEl.textContent = scope.summary;
+    scopeModeTextEl.textContent = scope.scopeMode;
+    scopeLockTextEl.textContent = scope.lockText;
+
+    function setExportAccess() {
+      if (scope.allowExport) {
+        exportHint.textContent = "Export ได้ตามข้อมูลใน scope ปัจจุบันและ filter ที่เลือก";
+        return;
+      }
+      exportHint.textContent = "Role staff ถูกปิด export เพื่อให้ดูเฉพาะ dashboard ในระบบ";
+      [exportAllBtn, exportIssuedBtn, exportRedeemedBtn].forEach((btn) => {
+        btn.disabled = true;
+        btn.title = "Role นี้ยังไม่เปิดให้ export";
+      });
+    }
+    setExportAccess();
+
+    function populateOutletOptions() {
       let options = ['<option value="all">All</option>'];
-      if (role === "admin") {
+
+      if (scope.baseQueryMode === "outlet" && scope.fixedOutlet && scope.fixedOutlet !== "all") {
+        options = [`<option value="${scope.fixedOutlet}">${scope.fixedOutlet}</option>`];
+      } else {
         const dept = departmentFilterEl.value;
         if (dept === "all") {
-          const allOutlets = Object.values(outletMap).flat();
-          [...new Set(allOutlets)].forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
+          const allOutlets = [...new Set(Object.values(outletMap).flat())];
+          allOutlets.forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
         } else {
           (outletMap[dept] || []).forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
         }
-      } else {
-        (outletMap[department] || []).forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
       }
+
       outletFilterEl.innerHTML = options.join("");
+      if (scope.fixedOutlet && scope.fixedOutlet !== "all") outletFilterEl.value = scope.fixedOutlet;
     }
-    populateOutletOptions(profile.department || "FB", profile.role);
+
+    function applyRoleLocks() {
+      if (scope.fixedDepartment && scope.fixedDepartment !== "all") {
+        departmentFilterEl.value = scope.fixedDepartment;
+      }
+      departmentFilterEl.disabled = !scope.allowDepartmentFilter;
+      populateOutletOptions();
+      outletFilterEl.disabled = !scope.allowOutletFilter;
+    }
+    applyRoleLocks();
 
     departmentFilterEl.addEventListener("change", () => {
-      if (profile.role === "admin") populateOutletOptions(profile.department || "FB", profile.role);
+      if (scope.allowDepartmentFilter) populateOutletOptions();
     });
 
     function toDateObject(value) {
@@ -199,10 +317,16 @@
     }
 
     async function getBaseSnapshot() {
-      if (profile.role === "admin") return await getDocs(collection(db, "vouchers"));
-      const dept = profile.department || "";
-      const q = query(collection(db, "vouchers"), where("department", "==", dept));
-      return await getDocs(q);
+      if (scope.baseQueryMode === "all") {
+        return await getDocs(collection(db, "vouchers"));
+      }
+      if (scope.baseQueryMode === "department") {
+        return await getDocs(query(collection(db, "vouchers"), where("department", "==", scope.fixedDepartment)));
+      }
+      if (scope.baseQueryMode === "outlet") {
+        return await getDocs(query(collection(db, "vouchers"), where("outlet", "==", scope.fixedOutlet)));
+      }
+      return await getDocs(query(collection(db, "vouchers"), where("issued_by_uid", "==", user.uid)));
     }
 
     function buildOutletSummary(docs) {
@@ -264,13 +388,13 @@
 
       outletChartInstance = new Chart(document.getElementById("outletChart"), {
         type: "bar",
-        data: { labels: outletSummary.map(x=>x.outlet), datasets: [{ label: "Total", data: outletSummary.map(x=>x.total) }] },
+        data: { labels: outletSummary.map(x => x.outlet), datasets: [{ label: "Total", data: outletSummary.map(x => x.total) }] },
         options: { responsive: true, plugins: { legend: { display: false } } }
       });
 
       staffChartInstance = new Chart(document.getElementById("staffChart"), {
         type: "bar",
-        data: { labels: staffSummary.map(x=>x.staff), datasets: [{ label: "Total", data: staffSummary.map(x=>x.total) }] },
+        data: { labels: staffSummary.map(x => x.staff), datasets: [{ label: "Total", data: staffSummary.map(x => x.total) }] },
         options: { responsive: true, plugins: { legend: { display: false } } }
       });
 
@@ -286,19 +410,27 @@
       const headers = dataRows.length ? Object.keys(dataRows[0]) : [];
       ws["!cols"] = headers.map((header) => {
         let maxLen = String(header).length;
-        dataRows.forEach((row) => { const value = row[header] ?? ""; maxLen = Math.max(maxLen, String(value).length); });
+        dataRows.forEach((row) => {
+          const value = row[header] ?? "";
+          maxLen = Math.max(maxLen, String(value).length);
+        });
         return { wch: Math.min(Math.max(maxLen + 2, 12), 35) };
       });
     }
 
     function getMonthKey(value) {
-      const d = toDateObject(value); if (!d) return "Unknown";
-      const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,"0");
+      const d = toDateObject(value);
+      if (!d) return "Unknown";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
       return `${y}-${m}`;
     }
     function getDayKey(value) {
-      const d = toDateObject(value); if (!d) return "Unknown";
-      const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,"0"); const day = String(d.getDate()).padStart(2,"0");
+      const d = toDateObject(value);
+      if (!d) return "Unknown";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
       return `${y}-${m}-${day}`;
     }
     function buildStatusSummary(docs) {
@@ -340,9 +472,9 @@
       });
       return Object.values(map).sort((a,b) => b.month.localeCompare(a.month));
     }
-    function getTopItem(rows, keyField="total", nameField="outlet") {
+    function getTopItem(rows, keyField = "total", nameField = "outlet") {
       if (!rows.length) return "-";
-      const top = [...rows].sort((a,b) => (b[keyField]||0) - (a[keyField]||0))[0];
+      const top = [...rows].sort((a,b) => (b[keyField] || 0) - (a[keyField] || 0))[0];
       return `${top[nameField]} (${top[keyField]})`;
     }
 
@@ -354,11 +486,16 @@
         const data = docSnap.data();
         if (codeSet.has(data.voucher_code)) logs.push(data);
       });
-      logs.sort((a,b) => (toDateObject(b.action_at)?.getTime()||0) - (toDateObject(a.action_at)?.getTime()||0));
+      logs.sort((a,b) => (toDateObject(b.action_at)?.getTime() || 0) - (toDateObject(a.action_at)?.getTime() || 0));
       return logs;
     }
 
     async function exportVouchers(filterStatus = "all") {
+      if (!scope.allowExport) {
+        alert("Role นี้ยังไม่เปิดให้ export");
+        return;
+      }
+
       const snap = await getBaseSnapshot();
       const rows = [];
       const filteredDocsForExport = [];
@@ -393,7 +530,6 @@
       if (!rows.length) return alert("ไม่มีข้อมูลสำหรับ export");
 
       const wb = XLSX.utils.book_new();
-
       const statusSummary = buildStatusSummary(filteredDocsForExport);
       const outletSummary = buildOutletSummary(filteredDocsForExport);
       const staffSummary = buildStaffSummary(filteredDocsForExport);
@@ -406,9 +542,10 @@
       const coverRows = [
         { Metric: "Report Name", Value: "Laya Voucher Management" },
         { Metric: "Export Date", Value: new Date().toLocaleString("th-TH") },
+        { Metric: "Role Scope", Value: scope.scopeMode },
         { Metric: "Filter Status", Value: filterStatus },
-        { Metric: "Department Scope", Value: profile.role === "admin" ? "All Departments" : (profile.department || "-") },
-        { Metric: "Outlet Filter", Value: outletFilterEl ? outletFilterEl.value : "all" },
+        { Metric: "Department Filter", Value: departmentFilterEl.value || "all" },
+        { Metric: "Outlet Filter", Value: outletFilterEl.value || "all" },
         { Metric: "Date From", Value: dateFromEl.value || "-" },
         { Metric: "Date To", Value: dateToEl.value || "-" },
         { Metric: "Total Records", Value: statusSummary.total },
@@ -417,104 +554,61 @@
         { Metric: "Total Expired", Value: statusSummary.expired },
         { Metric: "Total Cancelled", Value: statusSummary.cancelled },
         { Metric: "Redeem Rate", Value: redeemRate },
+        { Metric: "Top Outlet", Value: getTopItem(outletSummary, "total", "outlet") },
+        { Metric: "Top Staff", Value: getTopItem(staffSummary, "total", "staff") },
         { Metric: "Latest Daily Period", Value: latestDaily.date },
         { Metric: "Latest Daily Total", Value: latestDaily.total },
-        { Metric: "Latest Daily Redeemed", Value: latestDaily.redeemed },
         { Metric: "Latest Monthly Period", Value: latestMonthly.month },
-        { Metric: "Latest Monthly Total", Value: latestMonthly.total },
-        { Metric: "Latest Monthly Redeemed", Value: latestMonthly.redeemed },
-        { Metric: "Top Outlet", Value: getTopItem(outletSummary, "total", "outlet") },
-        { Metric: "Top Staff", Value: getTopItem(staffSummary, "total", "staff") }
+        { Metric: "Latest Monthly Total", Value: latestMonthly.total }
       ];
-      const wsCover = XLSX.utils.json_to_sheet(coverRows);
-      styleWorksheet(wsCover, coverRows);
-      XLSX.utils.book_append_sheet(wb, wsCover, "Report Summary");
 
-      const dailyRows = dailySummary.map((x) => ({ Date:x.date, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
-      const wsDaily = XLSX.utils.json_to_sheet(dailyRows.length ? dailyRows : [{ Date:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
-      styleWorksheet(wsDaily, dailyRows);
-      XLSX.utils.book_append_sheet(wb, wsDaily, "Daily Summary");
-
-      const monthlyRows = monthlySummary.map((x) => ({ Month:x.month, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
-      const wsMonthly = XLSX.utils.json_to_sheet(monthlyRows.length ? monthlyRows : [{ Month:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
-      styleWorksheet(wsMonthly, monthlyRows);
-      XLSX.utils.book_append_sheet(wb, wsMonthly, "Monthly Summary");
-
-      const ws = XLSX.utils.json_to_sheet(rows);
-      styleWorksheet(ws, rows);
-      XLSX.utils.book_append_sheet(wb, ws, "Vouchers");
-
-      const summaryRows = outletSummary.map((x) => ({ Outlet:x.outlet, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
-      const wsOutlet = XLSX.utils.json_to_sheet(summaryRows.length ? summaryRows : [{ Outlet:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
-      styleWorksheet(wsOutlet, summaryRows);
-      XLSX.utils.book_append_sheet(wb, wsOutlet, "Outlet Summary");
-
-      const staffSummaryRows = staffSummary.map((x) => ({ Staff:x.staff, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
-      const wsStaff = XLSX.utils.json_to_sheet(staffSummaryRows.length ? staffSummaryRows : [{ Staff:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
-      styleWorksheet(wsStaff, staffSummaryRows);
-      XLSX.utils.book_append_sheet(wb, wsStaff, "Staff Summary");
-
-      const voucherCodes = filteredDocsForExport.map(x => x.voucher_code).filter(Boolean);
-      const logs = await getLogsForVoucherCodes(voucherCodes);
+      const logs = await getLogsForVoucherCodes(filteredDocsForExport.map((x) => x.voucher_code).filter(Boolean));
       const logRows = logs.map((log) => ({
         "Voucher Code": log.voucher_code || "",
-        "Internal Ref": log.voucher_ref || "",
+        "Ref": log.voucher_ref || "",
         "Action": log.action || "",
         "Action At": formatDateTime(log.action_at),
         "Action By": log.action_by_name || log.action_by_uid || "",
+        "Department": log.department || "",
+        "Outlet": log.outlet || "",
         "Note": log.note || ""
       }));
-      const wsLogs = XLSX.utils.json_to_sheet(logRows.length ? logRows : [{ "Voucher Code":"", "Internal Ref":"", "Action":"", "Action At":"", "Action By":"", "Note":"No logs" }]);
-      styleWorksheet(wsLogs, logRows);
-      XLSX.utils.book_append_sheet(wb, wsLogs, "Voucher Logs");
 
-      const today = new Date();
-      const y = today.getFullYear();
-      const m = String(today.getMonth() + 1).padStart(2, "0");
-      const d = String(today.getDate()).padStart(2, "0");
-      const scope = profile.role === "admin" ? "all-departments" : (profile.department || "department");
-      const filename = `voucher_report_${scope}_${filterStatus}_${y}${m}${d}.xlsx`;
-      XLSX.writeFile(wb, filename);
-    }
+      const sheets = [
+        ["00_Cover", coverRows],
+        ["01_Vouchers", rows],
+        ["02_Status_Summary", [statusSummary]],
+        ["03_Outlet_Summary", outletSummary],
+        ["04_Staff_Summary", staffSummary],
+        ["05_Daily_Summary", dailySummary],
+        ["06_Monthly_Summary", monthlySummary],
+        ["07_Logs", logRows]
+      ];
 
-    async function loadDashboard() {
-      let total = 0, issued = 0, redeemed = 0, expired = 0, cancelled = 0;
-      const snap = await getBaseSnapshot();
-      const filteredDocs = [];
-
-      snap.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (!matchesFilter(data)) return;
-        filteredDocs.push(data);
-        total++;
-        const displayStatus = getDisplayStatus(data);
-        if (displayStatus === "issued") issued++;
-        else if (displayStatus === "redeemed") redeemed++;
-        else if (displayStatus === "expired") expired++;
-        else if (displayStatus === "cancelled") cancelled++;
+      sheets.forEach(([name, dataRows]) => {
+        const ws = XLSX.utils.json_to_sheet(dataRows);
+        styleWorksheet(ws, dataRows);
+        XLSX.utils.book_append_sheet(wb, ws, name);
       });
 
-      totalEl.textContent = total;
-      issuedEl.textContent = issued;
-      redeemedEl.textContent = redeemed;
-      expiredEl.textContent = expired;
-      cancelledEl.textContent = cancelled;
+      const stamp = new Date();
+      const fileDate = `${stamp.getFullYear()}${String(stamp.getMonth()+1).padStart(2, "0")}${String(stamp.getDate()).padStart(2, "0")}`;
+      const fileName = `Laya_Voucher_${profile.role}_${filterStatus}_${fileDate}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    }
 
-      const outletSummary = buildOutletSummary(filteredDocs);
-      renderOutletSummaryTable(outletSummary);
-      const staffSummary = buildStaffSummary(filteredDocs);
-      renderStaffSummaryTable(staffSummary);
-      renderCharts(filteredDocs);
+    function renderRecentTable(filteredDocs) {
+      const rows = [...filteredDocs]
+        .sort((a, b) => (toDateObject(b.created_at)?.getTime() || 0) - (toDateObject(a.created_at)?.getTime() || 0))
+        .slice(0, 20);
 
-      if (!filteredDocs.length) {
+      if (!rows.length) {
         tbody.innerHTML = `<tr><td colspan="7">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
         return;
       }
 
-      filteredDocs.sort((a,b) => (toDateObject(b.created_at)?.getTime()||0) - (toDateObject(a.created_at)?.getTime()||0));
-      const latest10 = filteredDocs.slice(0, 10);
-      tbody.innerHTML = latest10.map((data) => {
-        const displayStatus = getDisplayStatus(data);
+      tbody.innerHTML = rows.map((data) => {
+        const status = getDisplayStatus(data);
         return `
           <tr>
             <td>${data.voucher_code || "-"}</td>
@@ -522,36 +616,56 @@
             <td>${data.name || "-"}</td>
             <td>${data.room || "-"}</td>
             <td>${data.outlet || "-"}</td>
-            <td><span class="status-pill status-${displayStatus}">${displayStatus}</span></td>
+            <td><span class="status-pill status-${status}">${status}</span></td>
             <td>${formatDate(data.expiry_date)}</td>
           </tr>
         `;
       }).join("");
     }
 
-    applyFilterBtn.addEventListener("click", () => loadDashboard());
+    async function loadDashboard() {
+      try {
+        const snap = await getBaseSnapshot();
+        const docs = [];
+        snap.forEach((docSnap) => docs.push(docSnap.data()));
+
+        const filteredDocs = docs.filter(matchesFilter);
+        const statusSummary = buildStatusSummary(filteredDocs);
+        totalEl.textContent = statusSummary.total;
+        issuedEl.textContent = statusSummary.issued;
+        redeemedEl.textContent = statusSummary.redeemed;
+        expiredEl.textContent = statusSummary.expired;
+        cancelledEl.textContent = statusSummary.cancelled;
+
+        const outletSummary = buildOutletSummary(filteredDocs);
+        const staffSummary = buildStaffSummary(filteredDocs);
+        renderOutletSummaryTable(outletSummary);
+        renderStaffSummaryTable(staffSummary);
+        renderCharts(filteredDocs);
+        renderRecentTable(filteredDocs);
+      } catch (err) {
+        outletSummaryBody.innerHTML = `<tr><td colspan="6">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+        staffSummaryBody.innerHTML = `<tr><td colspan="6">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+      }
+    }
+
+    applyFilterBtn.addEventListener("click", loadDashboard);
     resetFilterBtn.addEventListener("click", () => {
       dateFromEl.value = "";
       dateToEl.value = "";
       statusFilterEl.value = "all";
-      if (profile.role === "admin") {
-        departmentFilterEl.value = "all";
-        populateOutletOptions(profile.department || "FB", profile.role);
-      } else {
-        departmentFilterEl.value = profile.department || "all";
-        populateOutletOptions(profile.department || "FB", profile.role);
-      }
-      outletFilterEl.value = "all";
+      if (scope.allowDepartmentFilter) departmentFilterEl.value = "all";
+      if (scope.allowOutletFilter) outletFilterEl.value = "all";
+      applyRoleLocks();
       loadDashboard();
     });
 
-    document.getElementById("exportAllBtn").addEventListener("click", () => exportVouchers("all"));
-    document.getElementById("exportIssuedBtn").addEventListener("click", () => exportVouchers("issued"));
-    document.getElementById("exportRedeemedBtn").addEventListener("click", () => exportVouchers("redeemed"));
+    exportAllBtn.addEventListener("click", () => exportVouchers("all"));
+    exportIssuedBtn.addEventListener("click", () => exportVouchers("issued"));
+    exportRedeemedBtn.addEventListener("click", () => exportVouchers("redeemed"));
 
-    loadDashboard().catch((err) => {
-      tbody.innerHTML = `<tr><td colspan="7">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
-    });
+    await loadDashboard();
   </script>
 </body>
 </html>
