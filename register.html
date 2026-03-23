@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Laya Voucher</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Register</h1>
+    <div class="card">
+      <input id="employeeId" type="text" placeholder="รหัสพนักงาน เช่น FB001" />
+      <input id="name" type="text" placeholder="ชื่อพนักงาน" />
+      <input id="email" type="email" placeholder="Email" />
+      <select id="department">
+        <option value="FB">FB</option>
+        <option value="FO">FO</option>
+        <option value="SPA">SPA</option>
+      </select>
+      <input id="outlet" type="text" placeholder="Outlet เช่น The Taste" />
+      <input id="password" type="password" placeholder="รหัสผ่าน" />
+      <input id="confirmPassword" type="password" placeholder="ยืนยันรหัสผ่าน" />
+      <button id="registerBtn">Create Account</button>
+      <p id="msg"></p>
+      <p><a href="login.html">กลับไปหน้า Login</a></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import {
+      createUserWithEmailAndPassword,
+      updateProfile
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import {
+      collection,
+      query,
+      where,
+      getDocs,
+      limit,
+      doc,
+      setDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const employeeIdEl = document.getElementById("employeeId");
+    const nameEl = document.getElementById("name");
+    const emailEl = document.getElementById("email");
+    const departmentEl = document.getElementById("department");
+    const outletEl = document.getElementById("outlet");
+    const passwordEl = document.getElementById("password");
+    const confirmPasswordEl = document.getElementById("confirmPassword");
+    const registerBtn = document.getElementById("registerBtn");
+    const msg = document.getElementById("msg");
+
+    async function employeeIdExists(employeeId) {
+      const q = query(
+        collection(db, "users"),
+        where("employee_id", "==", employeeId),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      return !snap.empty;
+    }
+
+    registerBtn.addEventListener("click", async () => {
+      const employeeId = employeeIdEl.value.trim().toUpperCase();
+      const name = nameEl.value.trim();
+      const email = emailEl.value.trim();
+      const department = departmentEl.value;
+      const outlet = outletEl.value.trim();
+      const password = passwordEl.value;
+      const confirmPassword = confirmPasswordEl.value;
+
+      if (!employeeId || !name || !email || !department || !outlet || !password || !confirmPassword) {
+        msg.textContent = "กรุณากรอกข้อมูลให้ครบ";
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        msg.textContent = "รหัสผ่านไม่ตรงกัน";
+        return;
+      }
+
+      if (password.length < 6) {
+        msg.textContent = "รหัสผ่านต้องอย่างน้อย 6 ตัว";
+        return;
+      }
+
+      msg.textContent = "กำลังสร้างบัญชี...";
+
+      try {
+        const exists = await employeeIdExists(employeeId);
+        if (exists) {
+          msg.textContent = "รหัสพนักงานนี้ถูกใช้แล้ว";
+          return;
+        }
+
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+
+        try {
+          await updateProfile(cred.user, { displayName: name });
+        } catch {}
+
+        await setDoc(doc(db, "users", uid), {
+          employee_id: employeeId,
+          name,
+          email,
+          role: "staff",
+          department,
+          outlet,
+          active: true,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp()
+        });
+
+        await setDoc(doc(db, "employee_login_index", employeeId), {
+          email,
+          active: true,
+          uid,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp()
+        });
+
+        msg.textContent = "สมัครสมาชิกสำเร็จ กำลังพาไปหน้า Login...";
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 1200);
+      } catch (err) {
+        msg.textContent = "สมัครสมาชิกไม่สำเร็จ: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

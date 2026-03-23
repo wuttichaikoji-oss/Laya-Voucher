@@ -10,10 +10,11 @@
   <div class="container">
     <h1>Login</h1>
     <div class="card">
-      <input id="email" type="email" placeholder="Email" />
-      <input id="password" type="password" placeholder="Password" />
+      <input id="employeeId" type="text" placeholder="รหัสพนักงาน" />
+      <input id="password" type="password" placeholder="รหัสผ่าน" />
       <button id="loginBtn">Login</button>
       <p id="msg"></p>
+      <p><a href="register.html">สมัครสมาชิกใหม่</a></p>
     </div>
   </div>
 
@@ -23,15 +24,26 @@
       signInWithEmailAndPassword,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    import {
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    const emailEl = document.getElementById("email");
+    const employeeIdEl = document.getElementById("employeeId");
     const passwordEl = document.getElementById("password");
     const loginBtn = document.getElementById("loginBtn");
     const msg = document.getElementById("msg");
 
+    async function findLoginIndex(employeeId) {
+      const ref = doc(db, "employee_login_index", employeeId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return null;
+      return snap.data();
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
+
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
@@ -39,24 +51,46 @@
         msg.textContent = "ไม่พบบัญชีพนักงานในระบบ";
         return;
       }
+
       const profile = userSnap.data();
       if (!profile.active) {
         msg.textContent = "บัญชีนี้ถูกปิดการใช้งาน";
         return;
       }
+
       window.location.href = "dashboard.html";
     });
 
     loginBtn.addEventListener("click", async () => {
-      const email = emailEl.value.trim();
+      const employeeId = employeeIdEl.value.trim().toUpperCase();
       const password = passwordEl.value.trim();
-      if (!email || !password) {
-        msg.textContent = "กรุณากรอกอีเมลและรหัสผ่าน";
+
+      if (!employeeId || !password) {
+        msg.textContent = "กรุณากรอกรหัสพนักงานและรหัสผ่าน";
         return;
       }
+
       msg.textContent = "กำลังเข้าสู่ระบบ...";
+
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const loginIndex = await findLoginIndex(employeeId);
+
+        if (!loginIndex) {
+          msg.textContent = "ไม่พบรหัสพนักงานนี้ในระบบ";
+          return;
+        }
+
+        if (!loginIndex.active) {
+          msg.textContent = "บัญชีนี้ถูกปิดการใช้งาน";
+          return;
+        }
+
+        if (!loginIndex.email) {
+          msg.textContent = "บัญชีนี้ยังไม่ได้ผูกอีเมล";
+          return;
+        }
+
+        await signInWithEmailAndPassword(auth, loginIndex.email, password);
       } catch (err) {
         msg.textContent = "Login ไม่สำเร็จ: " + err.message;
       }

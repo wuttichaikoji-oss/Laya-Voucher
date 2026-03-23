@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function myProfile() {
+      return myUserDoc().data;
+    }
+
+    function myProfileExists() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isActive() {
+      return myProfileExists() && myProfile().active == true;
+    }
+
+    function isStaffOrAbove() {
+      return isActive() && (
+        myProfile().role == "staff" ||
+        myProfile().role == "supervisor" ||
+        myProfile().role == "manager" ||
+        myProfile().role == "admin"
+      );
+    }
+
+    function isSupervisorOrAbove() {
+      return isActive() && (
+        myProfile().role == "supervisor" ||
+        myProfile().role == "manager" ||
+        myProfile().role == "admin"
+      );
+    }
+
+    function isAdmin() {
+      return isActive() && myProfile().role == "admin";
+    }
+
+    function sameDepartment(resourceData) {
+      return resourceData.department == myProfile().department;
+    }
+
+    match /employee_login_index/{employeeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.email is string
+        && request.resource.data.active == true
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == "staff"
+        && request.resource.data.active == true
+        && request.resource.data.employee_id is string
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.department is string
+        && request.resource.data.outlet is string;
+
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && resource.data.role == request.resource.data.role
+        && resource.data.active == request.resource.data.active
+        && resource.data.employee_id == request.resource.data.employee_id;
+
+      allow update, delete: if isAdmin();
+    }
+
+    match /vouchers/{docId} {
+      allow read: if isAdmin() || (
+        isStaffOrAbove() &&
+        (
+          myProfile().role == "staff" ||
+          sameDepartment(resource.data)
+        )
+      );
+
+      allow create: if isStaffOrAbove()
+        && request.resource.data.department == myProfile().department
+        && request.resource.data.issued_by_uid == request.auth.uid;
+
+      allow update: if isAdmin() || (
+        isStaffOrAbove()
+        && sameDepartment(resource.data)
+        && sameDepartment(request.resource.data)
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /voucher_logs/{logId} {
+      allow read: if isAdmin() || (
+        isStaffOrAbove() &&
+        (
+          myProfile().role == "staff" ||
+          resource.data.department == myProfile().department
+        )
+      );
+
+      allow create: if isStaffOrAbove();
+      allow update, delete: if isAdmin();
+    }
+
+    match /running_numbers/{docId} {
+      allow read, write: if isStaffOrAbove();
+    }
+  }
+}

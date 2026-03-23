@@ -30,3 +30,16 @@ Laya Voucher Full Starter Repo
 
 
 อัปเดตแล้ว: firebase-config.js ใส่ค่าโปรเจกต์ laya-voucher ให้เรียบร้อย
+
+
+อัปเดตเพิ่ม:
+- login.html = เข้าระบบด้วยรหัสพนักงาน + รหัสผ่าน
+- register.html = สมัครสมาชิกใหม่ โดยสร้าง Firebase Auth และสร้างโปรไฟล์ใน /users
+- admin-users.html = เพิ่มช่อง employee_id
+หมายเหตุ: หน้า login จะค้นหา employee_id ใน collection /users แล้วใช้ email ที่ผูกไว้ไป login ผ่าน Firebase Auth
+
+
+อัปเดต rules-ready:
+- login.html เปลี่ยนเป็น lookup จาก /employee_login_index/{employee_id}
+- register.html จะสร้างทั้ง /users/{uid} และ /employee_login_index/{employee_id}
+- เพิ่มไฟล์ firestore.rules.txt สำหรับนำไปวางใน Firebase Console > Firestore Rules
