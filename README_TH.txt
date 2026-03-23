@@ -27,3 +27,6 @@ Laya Voucher Full Starter Repo
 - login.html
 - auth-guard.js
 - หน้าต่างๆให้ตรงกับ collection/field จริงของคุณ
+
+
+อัปเดตแล้ว: firebase-config.js ใส่ค่าโปรเจกต์ laya-voucher ให้เรียบร้อย
