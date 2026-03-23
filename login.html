@@ -8,30 +8,76 @@
 </head>
 <body class="auth-page">
   <div class="container auth-shell">
-    <section class="auth-hero">
-      <div>
+    <section class="auth-hero auth-hero-login">
+      <div class="auth-hero-top">
         <span class="brand-badge">Laya Resort Phuket</span>
         <h1 class="auth-title">Laya Voucher System</h1>
-        <p class="auth-subtitle">ระบบจัดการ Voucher สำหรับการออกสิทธิ์ ตรวจสอบ และ Redeem แบบใช้งานจริงในหน้างาน พร้อมแยกสิทธิ์ตาม role</p>
+        <p class="auth-subtitle">ระบบจัดการ Voucher สำหรับการออกสิทธิ์ ตรวจสอบ และ Redeem แบบใช้งานจริงในหน้างาน พร้อมควบคุมสิทธิ์ตาม role อย่างชัดเจน</p>
+
+        <div class="auth-hero-badges">
+          <span>Secure Access</span>
+          <span>Fast Redeem</span>
+          <span>Role Control</span>
+        </div>
       </div>
-      <div class="auth-points">
-        <div class="auth-point"><strong>Secure Access</strong><span>Login ด้วยรหัสพนักงานและ role-based permission</span></div>
-        <div class="auth-point"><strong>Fast Operations</strong><span>Issue, Search, Redeem และตรวจสอบสถานะได้รวดเร็ว</span></div>
-        <div class="auth-point"><strong>Clear Tracking</strong><span>ติดตาม reference, timeline และประวัติการใช้งานได้ง่าย</span></div>
+
+      <div class="auth-hero-panel">
+        <div class="auth-panel-head">
+          <div>
+            <p class="auth-panel-label">Operational flow</p>
+            <h3>ออกแบบให้หน้างานใช้ง่ายและควบคุมสิทธิ์ได้จริง</h3>
+          </div>
+          <span class="auth-panel-chip">Live workflow</span>
+        </div>
+
+        <div class="auth-mini-grid">
+          <div class="auth-mini-card">
+            <strong>Issue Voucher</strong>
+            <span>ออกสิทธิ์พร้อม reference และ outlet อย่างเป็นระบบ</span>
+          </div>
+          <div class="auth-mini-card">
+            <strong>Search & Verify</strong>
+            <span>ค้นหา ตรวจสอบสถานะ และดูรายละเอียด voucher ได้รวดเร็ว</span>
+          </div>
+          <div class="auth-mini-card">
+            <strong>Redeem Control</strong>
+            <span>พนักงานหน้างานทำ Redeem ได้อย่างเดียวตามสิทธิ์ที่กำหนด</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="auth-card">
-      <span class="soft-badge">Welcome back</span>
-      <h2>เข้าสู่ระบบ</h2>
-      <p class="page-subtitle">กรอกรหัสพนักงานและรหัสผ่านเพื่อเข้าสู่ระบบตามสิทธิ์ของคุณ</p>
-      <div style="height:18px"></div>
-      <input id="employeeId" type="text" placeholder="รหัสพนักงาน" />
-      <input id="password" type="password" placeholder="รหัสผ่าน" />
-      <button id="loginBtn">Login</button>
-      <p id="msg"></p>
-      <p class="ref">บัญชีสมัครใหม่จะเริ่มต้นเป็น staff และเข้าใช้งานหน้า Redeem ได้ทันที</p>
-      <p><a href="register.html">สมัครสมาชิกใหม่</a></p>
+    <section class="auth-side">
+      <div class="auth-card">
+        <span class="soft-badge">Welcome back</span>
+        <h2>เข้าสู่ระบบ</h2>
+        <p class="page-subtitle">กรอกรหัสพนักงานและรหัสผ่านเพื่อเข้าสู่ระบบตามสิทธิ์ของคุณ</p>
+
+        <div class="auth-form">
+          <div class="field-group">
+            <label for="employeeId">รหัสพนักงาน</label>
+            <input id="employeeId" type="text" placeholder="เช่น 300204 หรือ FB001" autocomplete="username" />
+          </div>
+
+          <div class="field-group">
+            <label for="password">รหัสผ่าน</label>
+            <input id="password" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" />
+          </div>
+
+          <button id="loginBtn">เข้าสู่ระบบ</button>
+          <p id="msg"></p>
+        </div>
+
+        <div class="auth-note">
+          <strong>หมายเหตุ</strong>
+          <span>บัญชีที่สมัครใหม่จะเริ่มต้นเป็น <b>staff</b> และเข้าใช้งานหน้า Redeem ได้ทันที</span>
+        </div>
+
+        <div class="auth-bottom-row">
+          <span class="auth-bottom-text">ยังไม่มีบัญชี?</span>
+          <a class="auth-inline-link" href="register.html">สมัครสมาชิกใหม่</a>
+        </div>
+      </div>
     </section>
   </div>
 

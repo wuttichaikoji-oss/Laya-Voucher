@@ -8,38 +8,104 @@
 </head>
 <body class="auth-page">
   <div class="container auth-shell">
-    <section class="auth-hero">
-      <div>
+    <section class="auth-hero auth-hero-register">
+      <div class="auth-hero-top">
         <span class="brand-badge">New account setup</span>
         <h1 class="auth-title">Create Staff Access</h1>
-        <p class="auth-subtitle">สร้างบัญชีจากรหัสพนักงานจริง เพื่อใช้กับระบบ Voucher โดย role เริ่มต้นจะเป็น <strong>staff</strong> และปรับสิทธิ์ภายหลังได้จากหน้า Admin</p>
+        <p class="auth-subtitle">สร้างบัญชีจากรหัสพนักงานจริงเพื่อใช้งานระบบ Voucher โดยบัญชีใหม่จะเริ่มต้นเป็น <strong>staff</strong> และให้ผู้ดูแลปรับสิทธิ์ภายหลังได้</p>
+
+        <div class="auth-hero-badges">
+          <span>Employee ID</span>
+          <span>Department</span>
+          <span>Outlet Scope</span>
+        </div>
       </div>
-      <div class="auth-points">
-        <div class="auth-point"><strong>Employee ID</strong><span>ใช้รหัสพนักงานเป็น index หลักในการเข้าสู่ระบบ</span></div>
-        <div class="auth-point"><strong>Department + Outlet</strong><span>เก็บข้อมูลพื้นฐานไว้เพื่อใช้แยก scope ตามหน่วยงาน</span></div>
-        <div class="auth-point"><strong>Ready for Role Upgrade</strong><span>เปลี่ยนเป็น supervisor, manager หรือ admin ได้ในภายหลัง</span></div>
+
+      <div class="auth-hero-panel">
+        <div class="auth-panel-head">
+          <div>
+            <p class="auth-panel-label">Account structure</p>
+            <h3>ข้อมูลพื้นฐานจะถูกใช้แยกสิทธิ์และขอบเขตการมองเห็นในระบบ</h3>
+          </div>
+          <span class="auth-panel-chip">Staff by default</span>
+        </div>
+
+        <div class="auth-mini-grid">
+          <div class="auth-mini-card">
+            <strong>Employee Login Index</strong>
+            <span>ใช้รหัสพนักงานเป็นตัวอ้างอิงหลักสำหรับการเข้าสู่ระบบ</span>
+          </div>
+          <div class="auth-mini-card">
+            <strong>Department + Outlet</strong>
+            <span>ช่วยกำหนด scope ของการทำงานและการมองเห็นข้อมูล</span>
+          </div>
+          <div class="auth-mini-card">
+            <strong>Upgradeable Role</strong>
+            <span>เปลี่ยนสิทธิ์เป็น supervisor, manager หรือ admin ได้ในภายหลัง</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="auth-card">
-      <span class="soft-badge">Register</span>
-      <h2>สมัครสมาชิกใหม่</h2>
-      <p class="page-subtitle">กรอกข้อมูลให้ครบเพื่อสร้างบัญชีสำหรับใช้งานระบบ</p>
-      <div style="height:18px"></div>
-      <input id="employeeId" type="text" placeholder="รหัสพนักงาน เช่น FB001 หรือ 300204" />
-      <input id="name" type="text" placeholder="ชื่อพนักงาน" />
-      <select id="department">
-        <option value="FB">FB</option>
-        <option value="FO">FO</option>
-        <option value="SPA">SPA</option>
-      </select>
-      <input id="outlet" type="text" placeholder="Outlet เช่น The Taste" />
-      <input id="password" type="password" placeholder="รหัสผ่าน" />
-      <input id="confirmPassword" type="password" placeholder="ยืนยันรหัสผ่าน" />
-      <button id="registerBtn">Create Account</button>
-      <p id="msg"></p>
-      <p class="ref">ระบบจะสร้างอีเมลภายในอัตโนมัติจากรหัสพนักงาน</p>
-      <p><a href="login.html">กลับไปหน้า Login</a></p>
+    <section class="auth-side">
+      <div class="auth-card">
+        <span class="soft-badge">Register</span>
+        <h2>สมัครสมาชิกใหม่</h2>
+        <p class="page-subtitle">กรอกข้อมูลให้ครบเพื่อสร้างบัญชีสำหรับใช้งานระบบ</p>
+
+        <div class="auth-form">
+          <div class="field-group">
+            <label for="employeeId">รหัสพนักงาน</label>
+            <input id="employeeId" type="text" placeholder="เช่น FB001 หรือ 300204" autocomplete="username" />
+          </div>
+
+          <div class="field-group">
+            <label for="name">ชื่อพนักงาน</label>
+            <input id="name" type="text" placeholder="ชื่อ - นามสกุล" autocomplete="name" />
+          </div>
+
+          <div class="field-row two-col">
+            <div class="field-group">
+              <label for="department">แผนก</label>
+              <select id="department">
+                <option value="FB">FB</option>
+                <option value="FO">FO</option>
+                <option value="SPA">SPA</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="outlet">Outlet</label>
+              <input id="outlet" type="text" placeholder="เช่น The Taste" />
+            </div>
+          </div>
+
+          <div class="field-row two-col">
+            <div class="field-group">
+              <label for="password">รหัสผ่าน</label>
+              <input id="password" type="password" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password" />
+            </div>
+
+            <div class="field-group">
+              <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
+              <input id="confirmPassword" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง" autocomplete="new-password" />
+            </div>
+          </div>
+
+          <button id="registerBtn">Create Account</button>
+          <p id="msg"></p>
+        </div>
+
+        <div class="auth-note">
+          <strong>ระบบจะสร้างอีเมลภายในอัตโนมัติ</strong>
+          <span>รูปแบบอีเมลจะอ้างอิงจากรหัสพนักงานเพื่อใช้กับ Firebase Authentication</span>
+        </div>
+
+        <div class="auth-bottom-row">
+          <span class="auth-bottom-text">มีบัญชีอยู่แล้ว?</span>
+          <a class="auth-inline-link" href="login.html">กลับไปหน้า Login</a>
+        </div>
+      </div>
     </section>
   </div>
 
