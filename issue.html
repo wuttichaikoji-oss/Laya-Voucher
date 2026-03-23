@@ -162,6 +162,7 @@
     const qrBox = document.getElementById("qrcode");
 
     const fixedOutlet = "Aroonsawat";
+    const effectiveDepartment = (profile.department || "").trim() || "FB";
     let pendingVoucher = null;
 
     if (profile.role !== "admin") {
@@ -170,6 +171,17 @@
       validityHint.textContent = `Role ${profile.role} จะใช้อายุ Voucher มาตรฐาน 30 วัน`;
     } else {
       validityHint.textContent = "Admin สามารถเลือกอายุ Voucher เป็น 7 วัน, 15 วัน, 30 วัน หรือจนกว่าจะใช้";
+    }
+
+    if (profile.role !== "admin" && !(profile.department || "").trim()) {
+      generateBtn.disabled = true;
+      createBtn.disabled = true;
+      renderResultError("บัญชีนี้ยังไม่ได้กำหนด Department จึงยังออก Voucher ไม่ได้ กรุณาให้ Admin ไปกำหนด Department ในหน้า Users ก่อน");
+    } else if (profile.role === "admin" && !(profile.department || "").trim()) {
+      const adminNote = document.createElement("p");
+      adminNote.className = "ref";
+      adminNote.textContent = "บัญชี admin นี้ยังไม่ได้กำหนด Department ระบบจะใช้ค่าเริ่มต้นเป็น FB สำหรับการสร้าง Voucher";
+      validityWrap.appendChild(adminNote);
     }
 
     function getYearMonth() {
@@ -285,7 +297,7 @@
         const name = document.getElementById("name").value.trim();
         const room = document.getElementById("room").value.trim();
         const reason = document.getElementById("reason").value.trim();
-        const serial = await generateVoucherSerial(profile.department || "FB");
+        const serial = await generateVoucherSerial(effectiveDepartment);
         const voucherCode = await generateUniqueVoucherCode();
         const validity = getValidityMeta();
         pendingVoucher = {
@@ -296,7 +308,7 @@
           room,
           reason,
           outlet: fixedOutlet,
-          department: profile.department || "FB",
+          department: effectiveDepartment,
           validityMode: validity.mode,
           validityLabel: validity.label,
           expiryDate: validity.expiryDate,
