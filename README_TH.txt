@@ -49,3 +49,6 @@ Laya Voucher Full Starter Repo
 - register.html เอาช่อง Email ออกแล้ว
 - ระบบจะสร้างอีเมลภายในอัตโนมัติจากรหัสพนักงาน เช่น 300204@laya-voucher.local
 - login ยังใช้รหัสพนักงาน + รหัสผ่านเหมือนเดิม
+
+
+แก้ล่าสุด: register.html เช็ก employee_id ซ้ำจาก employee_login_index แทน /users เพื่อให้สอดคล้องกับ Rules

@@ -22,7 +22,7 @@
       <input id="confirmPassword" type="password" placeholder="ยืนยันรหัสผ่าน" />
       <button id="registerBtn">Create Account</button>
       <p id="msg"></p>
-      <p class="ref">ระบบจะสร้างอีเมลภายในให้อัตโนมัติจากรหัสพนักงาน</p>
+      <p class="ref">ระบบจะสร้างอีเมลภายในอัตโนมัติจากรหัสพนักงาน</p>
       <p><a href="login.html">กลับไปหน้า Login</a></p>
     </div>
   </div>
@@ -35,12 +35,8 @@
       signOut
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
     import {
-      collection,
-      query,
-      where,
-      getDocs,
-      limit,
       doc,
+      getDoc,
       setDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
@@ -59,13 +55,9 @@
     }
 
     async function employeeIdExists(employeeId) {
-      const q = query(
-        collection(db, "users"),
-        where("employee_id", "==", employeeId),
-        limit(1)
-      );
-      const snap = await getDocs(q);
-      return !snap.empty;
+      const ref = doc(db, "employee_login_index", employeeId);
+      const snap = await getDoc(ref);
+      return snap.exists();
     }
 
     registerBtn.addEventListener("click", async () => {
