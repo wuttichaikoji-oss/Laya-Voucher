@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voucher Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Voucher Dashboard</h1>
+
+    <div class="card">
+      <h2>Filter</h2>
+      <div class="filter-grid">
+        <div><label for="dateFrom">Date From</label><input type="date" id="dateFrom" /></div>
+        <div><label for="dateTo">Date To</label><input type="date" id="dateTo" /></div>
+        <div>
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter">
+            <option value="all">All</option>
+            <option value="issued">Issued</option>
+            <option value="redeemed">Redeemed</option>
+            <option value="expired">Expired</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div>
+          <label for="departmentFilter">Department</label>
+          <select id="departmentFilter">
+            <option value="all">All</option>
+            <option value="FB">FB</option>
+            <option value="FO">FO</option>
+            <option value="SPA">SPA</option>
+          </select>
+        </div>
+        <div>
+          <label for="outletFilter">Outlet</label>
+          <select id="outletFilter"><option value="all">All</option></select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button id="applyFilterBtn">Apply Filter</button>
+        <button id="resetFilterBtn" type="button">Reset</button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="totalCount">0</div></div>
+      <div class="stat-card"><div class="stat-label">Issued</div><div class="stat-value" id="issuedCount">0</div></div>
+      <div class="stat-card"><div class="stat-label">Redeemed</div><div class="stat-value" id="redeemedCount">0</div></div>
+      <div class="stat-card"><div class="stat-label">Expired</div><div class="stat-value" id="expiredCount">0</div></div>
+      <div class="stat-card"><div class="stat-label">Cancelled</div><div class="stat-value" id="cancelledCount">0</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Export Report</h2>
+      <button id="exportAllBtn">Export All</button>
+      <button id="exportIssuedBtn">Export Issued</button>
+      <button id="exportRedeemedBtn">Export Redeemed</button>
+    </div>
+
+    <div class="card">
+      <h2>Summary by Outlet</h2>
+      <div class="table-wrap">
+        <table class="voucher-table">
+          <thead><tr><th>Outlet</th><th>Total</th><th>Issued</th><th>Redeemed</th><th>Expired</th><th>Cancelled</th></tr></thead>
+          <tbody id="outletSummaryBody"><tr><td colspan="6">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Summary by Staff</h2>
+      <div class="table-wrap">
+        <table class="voucher-table">
+          <thead><tr><th>Staff</th><th>Total Issued</th><th>Issued</th><th>Redeemed</th><th>Expired</th><th>Cancelled</th></tr></thead>
+          <tbody id="staffSummaryBody"><tr><td colspan="6">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Charts</h2>
+      <div class="chart-grid">
+        <div><h3>By Outlet</h3><canvas id="outletChart"></canvas></div>
+        <div><h3>By Staff</h3><canvas id="staffChart"></canvas></div>
+        <div><h3>Status Overview</h3><canvas id="statusChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>รายการล่าสุด</h2>
+      <div class="table-wrap">
+        <table class="voucher-table">
+          <thead><tr><th>Code</th><th>Ref</th><th>ชื่อ</th><th>ห้อง</th><th>Outlet</th><th>สถานะ</th><th>วันหมดอายุ</th></tr></thead>
+          <tbody id="recentTableBody"><tr><td colspan="7">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="nav" id="navMenu"></div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { requireRole, renderNav } from "./auth-guard.js";
+    import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const { profile } = await requireRole(["supervisor", "manager", "admin"]);
+    renderNav(profile);
+
+    const dateFromEl = document.getElementById("dateFrom");
+    const dateToEl = document.getElementById("dateTo");
+    const statusFilterEl = document.getElementById("statusFilter");
+    const departmentFilterEl = document.getElementById("departmentFilter");
+    const outletFilterEl = document.getElementById("outletFilter");
+    const applyFilterBtn = document.getElementById("applyFilterBtn");
+    const resetFilterBtn = document.getElementById("resetFilterBtn");
+    const outletSummaryBody = document.getElementById("outletSummaryBody");
+    const staffSummaryBody = document.getElementById("staffSummaryBody");
+
+    const totalEl = document.getElementById("totalCount");
+    const issuedEl = document.getElementById("issuedCount");
+    const redeemedEl = document.getElementById("redeemedCount");
+    const expiredEl = document.getElementById("expiredCount");
+    const cancelledEl = document.getElementById("cancelledCount");
+    const tbody = document.getElementById("recentTableBody");
+
+    let outletChartInstance = null;
+    let staffChartInstance = null;
+    let statusChartInstance = null;
+
+    const outletMap = {
+      FB: ["The Taste", "Mangrove", "Aroonsawat Lounge", "Room Service", "Banquet"],
+      FO: ["Front Desk", "Concierge"],
+      SPA: ["Spa Reception", "Treatment"]
+    };
+
+    if (profile.role !== "admin") {
+      departmentFilterEl.value = profile.department || "all";
+      departmentFilterEl.disabled = true;
+    }
+
+    function populateOutletOptions(department, role) {
+      let options = ['<option value="all">All</option>'];
+      if (role === "admin") {
+        const dept = departmentFilterEl.value;
+        if (dept === "all") {
+          const allOutlets = Object.values(outletMap).flat();
+          [...new Set(allOutlets)].forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
+        } else {
+          (outletMap[dept] || []).forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
+        }
+      } else {
+        (outletMap[department] || []).forEach((outlet) => options.push(`<option value="${outlet}">${outlet}</option>`));
+      }
+      outletFilterEl.innerHTML = options.join("");
+    }
+    populateOutletOptions(profile.department || "FB", profile.role);
+
+    departmentFilterEl.addEventListener("change", () => {
+      if (profile.role === "admin") populateOutletOptions(profile.department || "FB", profile.role);
+    });
+
+    function toDateObject(value) {
+      if (!value) return null;
+      try { return value.toDate ? value.toDate() : new Date(value); } catch { return null; }
+    }
+    function formatDate(value) {
+      const d = toDateObject(value);
+      return d ? d.toLocaleDateString("th-TH") : "-";
+    }
+    function formatDateTime(value) {
+      const d = toDateObject(value);
+      return d ? d.toLocaleString("th-TH") : "";
+    }
+    function isExpiredDoc(data) {
+      if (!data.expiry_date) return false;
+      const expiry = toDateObject(data.expiry_date);
+      return data.status === "issued" && expiry && new Date() > expiry;
+    }
+    function getDisplayStatus(data) {
+      if (!data) return "";
+      if (isExpiredDoc(data)) return "expired";
+      return data.status || "";
+    }
+    function matchesFilter(data) {
+      const displayStatus = getDisplayStatus(data);
+      const createdAt = toDateObject(data.created_at);
+      if (statusFilterEl.value !== "all" && displayStatus !== statusFilterEl.value) return false;
+      if (departmentFilterEl.value !== "all" && (data.department || "") !== departmentFilterEl.value) return false;
+      if (outletFilterEl.value !== "all" && (data.outlet || "") !== outletFilterEl.value) return false;
+      if (dateFromEl.value && createdAt && createdAt < new Date(dateFromEl.value + "T00:00:00")) return false;
+      if (dateToEl.value && createdAt && createdAt > new Date(dateToEl.value + "T23:59:59")) return false;
+      return true;
+    }
+
+    async function getBaseSnapshot() {
+      if (profile.role === "admin") return await getDocs(collection(db, "vouchers"));
+      const dept = profile.department || "";
+      const q = query(collection(db, "vouchers"), where("department", "==", dept));
+      return await getDocs(q);
+    }
+
+    function buildOutletSummary(docs) {
+      const summary = {};
+      docs.forEach((data) => {
+        const outlet = data.outlet || "Unknown";
+        const status = getDisplayStatus(data);
+        if (!summary[outlet]) summary[outlet] = { outlet, total:0, issued:0, redeemed:0, expired:0, cancelled:0 };
+        summary[outlet].total++;
+        if (status === "issued") summary[outlet].issued++;
+        else if (status === "redeemed") summary[outlet].redeemed++;
+        else if (status === "expired") summary[outlet].expired++;
+        else if (status === "cancelled") summary[outlet].cancelled++;
+      });
+      return Object.values(summary).sort((a,b) => b.total - a.total);
+    }
+
+    function buildStaffSummary(docs) {
+      const summary = {};
+      docs.forEach((data) => {
+        const staff = data.issued_by_name || data.issued_by_uid || "Unknown";
+        const status = getDisplayStatus(data);
+        if (!summary[staff]) summary[staff] = { staff, total:0, issued:0, redeemed:0, expired:0, cancelled:0 };
+        summary[staff].total++;
+        if (status === "issued") summary[staff].issued++;
+        else if (status === "redeemed") summary[staff].redeemed++;
+        else if (status === "expired") summary[staff].expired++;
+        else if (status === "cancelled") summary[staff].cancelled++;
+      });
+      return Object.values(summary).sort((a,b) => b.total - a.total);
+    }
+
+    function renderOutletSummaryTable(rows) {
+      if (!rows.length) return outletSummaryBody.innerHTML = `<tr><td colspan="6">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
+      outletSummaryBody.innerHTML = rows.map((row) => `
+        <tr><td>${row.outlet}</td><td>${row.total}</td><td>${row.issued}</td><td>${row.redeemed}</td><td>${row.expired}</td><td>${row.cancelled}</td></tr>
+      `).join("");
+    }
+
+    function renderStaffSummaryTable(rows) {
+      if (!rows.length) return staffSummaryBody.innerHTML = `<tr><td colspan="6">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
+      staffSummaryBody.innerHTML = rows.map((row) => `
+        <tr><td>${row.staff}</td><td>${row.total}</td><td>${row.issued}</td><td>${row.redeemed}</td><td>${row.expired}</td><td>${row.cancelled}</td></tr>
+      `).join("");
+    }
+
+    function renderCharts(filteredDocs) {
+      const outletSummary = buildOutletSummary(filteredDocs);
+      const staffSummary = buildStaffSummary(filteredDocs);
+      const statusCounts = { issued:0, redeemed:0, expired:0, cancelled:0 };
+      filteredDocs.forEach((data) => {
+        const status = getDisplayStatus(data);
+        if (statusCounts[status] !== undefined) statusCounts[status]++;
+      });
+
+      if (outletChartInstance) outletChartInstance.destroy();
+      if (staffChartInstance) staffChartInstance.destroy();
+      if (statusChartInstance) statusChartInstance.destroy();
+
+      outletChartInstance = new Chart(document.getElementById("outletChart"), {
+        type: "bar",
+        data: { labels: outletSummary.map(x=>x.outlet), datasets: [{ label: "Total", data: outletSummary.map(x=>x.total) }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+
+      staffChartInstance = new Chart(document.getElementById("staffChart"), {
+        type: "bar",
+        data: { labels: staffSummary.map(x=>x.staff), datasets: [{ label: "Total", data: staffSummary.map(x=>x.total) }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+
+      statusChartInstance = new Chart(document.getElementById("statusChart"), {
+        type: "pie",
+        data: { labels: ["Issued", "Redeemed", "Expired", "Cancelled"], datasets: [{ data: [statusCounts.issued, statusCounts.redeemed, statusCounts.expired, statusCounts.cancelled] }] },
+        options: { responsive: true }
+      });
+    }
+
+    function styleWorksheet(ws, dataRows = []) {
+      if (!ws["!ref"]) return;
+      const headers = dataRows.length ? Object.keys(dataRows[0]) : [];
+      ws["!cols"] = headers.map((header) => {
+        let maxLen = String(header).length;
+        dataRows.forEach((row) => { const value = row[header] ?? ""; maxLen = Math.max(maxLen, String(value).length); });
+        return { wch: Math.min(Math.max(maxLen + 2, 12), 35) };
+      });
+    }
+
+    function getMonthKey(value) {
+      const d = toDateObject(value); if (!d) return "Unknown";
+      const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,"0");
+      return `${y}-${m}`;
+    }
+    function getDayKey(value) {
+      const d = toDateObject(value); if (!d) return "Unknown";
+      const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,"0"); const day = String(d.getDate()).padStart(2,"0");
+      return `${y}-${m}-${day}`;
+    }
+    function buildStatusSummary(docs) {
+      const summary = { total: docs.length, issued:0, redeemed:0, expired:0, cancelled:0 };
+      docs.forEach((data) => {
+        const status = getDisplayStatus(data);
+        if (status === "issued") summary.issued++;
+        else if (status === "redeemed") summary.redeemed++;
+        else if (status === "expired") summary.expired++;
+        else if (status === "cancelled") summary.cancelled++;
+      });
+      return summary;
+    }
+    function buildDailySummary(docs) {
+      const map = {};
+      docs.forEach((data) => {
+        const key = getDayKey(data.created_at);
+        if (!map[key]) map[key] = { date:key, total:0, issued:0, redeemed:0, expired:0, cancelled:0 };
+        const status = getDisplayStatus(data);
+        map[key].total++;
+        if (status === "issued") map[key].issued++;
+        else if (status === "redeemed") map[key].redeemed++;
+        else if (status === "expired") map[key].expired++;
+        else if (status === "cancelled") map[key].cancelled++;
+      });
+      return Object.values(map).sort((a,b) => b.date.localeCompare(a.date));
+    }
+    function buildMonthlySummary(docs) {
+      const map = {};
+      docs.forEach((data) => {
+        const key = getMonthKey(data.created_at);
+        if (!map[key]) map[key] = { month:key, total:0, issued:0, redeemed:0, expired:0, cancelled:0 };
+        const status = getDisplayStatus(data);
+        map[key].total++;
+        if (status === "issued") map[key].issued++;
+        else if (status === "redeemed") map[key].redeemed++;
+        else if (status === "expired") map[key].expired++;
+        else if (status === "cancelled") map[key].cancelled++;
+      });
+      return Object.values(map).sort((a,b) => b.month.localeCompare(a.month));
+    }
+    function getTopItem(rows, keyField="total", nameField="outlet") {
+      if (!rows.length) return "-";
+      const top = [...rows].sort((a,b) => (b[keyField]||0) - (a[keyField]||0))[0];
+      return `${top[nameField]} (${top[keyField]})`;
+    }
+
+    async function getLogsForVoucherCodes(voucherCodes) {
+      const allLogsSnap = await getDocs(collection(db, "voucher_logs"));
+      const codeSet = new Set(voucherCodes);
+      const logs = [];
+      allLogsSnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (codeSet.has(data.voucher_code)) logs.push(data);
+      });
+      logs.sort((a,b) => (toDateObject(b.action_at)?.getTime()||0) - (toDateObject(a.action_at)?.getTime()||0));
+      return logs;
+    }
+
+    async function exportVouchers(filterStatus = "all") {
+      const snap = await getBaseSnapshot();
+      const rows = [];
+      const filteredDocsForExport = [];
+
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        const displayStatus = getDisplayStatus(data);
+        if (!matchesFilter(data)) return;
+        if (filterStatus !== "all" && displayStatus !== filterStatus) return;
+        filteredDocsForExport.push(data);
+        rows.push({
+          "Voucher Code": data.voucher_code || "",
+          "Internal Ref": data.internal_no || "",
+          "Recipient Name": data.name || "",
+          "Phone": data.phone || "",
+          "Room": data.room || "",
+          "Department": data.department || "",
+          "Outlet": data.outlet || "",
+          "Status": displayStatus,
+          "Created At": formatDateTime(data.created_at),
+          "Updated At": formatDateTime(data.updated_at),
+          "Expiry Date": formatDateTime(data.expiry_date),
+          "Redeemed At": formatDateTime(data.redeemed_at),
+          "Issued By": data.issued_by_name || data.issued_by_uid || "",
+          "Redeemed By": data.redeemed_by_name || data.redeemed_by_uid || "",
+          "Cancelled At": formatDateTime(data.cancelled_at),
+          "Cancelled By": data.cancelled_by_name || data.cancelled_by_uid || "",
+          "Cancel Reason": data.cancel_reason || ""
+        });
+      });
+
+      if (!rows.length) return alert("ไม่มีข้อมูลสำหรับ export");
+
+      const wb = XLSX.utils.book_new();
+
+      const statusSummary = buildStatusSummary(filteredDocsForExport);
+      const outletSummary = buildOutletSummary(filteredDocsForExport);
+      const staffSummary = buildStaffSummary(filteredDocsForExport);
+      const dailySummary = buildDailySummary(filteredDocsForExport);
+      const monthlySummary = buildMonthlySummary(filteredDocsForExport);
+      const redeemRate = statusSummary.total ? ((statusSummary.redeemed / statusSummary.total) * 100).toFixed(1) + "%" : "0%";
+      const latestDaily = dailySummary[0] || { date:"-", total:0, redeemed:0 };
+      const latestMonthly = monthlySummary[0] || { month:"-", total:0, redeemed:0 };
+
+      const coverRows = [
+        { Metric: "Report Name", Value: "Laya Voucher Management" },
+        { Metric: "Export Date", Value: new Date().toLocaleString("th-TH") },
+        { Metric: "Filter Status", Value: filterStatus },
+        { Metric: "Department Scope", Value: profile.role === "admin" ? "All Departments" : (profile.department || "-") },
+        { Metric: "Outlet Filter", Value: outletFilterEl ? outletFilterEl.value : "all" },
+        { Metric: "Date From", Value: dateFromEl.value || "-" },
+        { Metric: "Date To", Value: dateToEl.value || "-" },
+        { Metric: "Total Records", Value: statusSummary.total },
+        { Metric: "Total Issued", Value: statusSummary.issued },
+        { Metric: "Total Redeemed", Value: statusSummary.redeemed },
+        { Metric: "Total Expired", Value: statusSummary.expired },
+        { Metric: "Total Cancelled", Value: statusSummary.cancelled },
+        { Metric: "Redeem Rate", Value: redeemRate },
+        { Metric: "Latest Daily Period", Value: latestDaily.date },
+        { Metric: "Latest Daily Total", Value: latestDaily.total },
+        { Metric: "Latest Daily Redeemed", Value: latestDaily.redeemed },
+        { Metric: "Latest Monthly Period", Value: latestMonthly.month },
+        { Metric: "Latest Monthly Total", Value: latestMonthly.total },
+        { Metric: "Latest Monthly Redeemed", Value: latestMonthly.redeemed },
+        { Metric: "Top Outlet", Value: getTopItem(outletSummary, "total", "outlet") },
+        { Metric: "Top Staff", Value: getTopItem(staffSummary, "total", "staff") }
+      ];
+      const wsCover = XLSX.utils.json_to_sheet(coverRows);
+      styleWorksheet(wsCover, coverRows);
+      XLSX.utils.book_append_sheet(wb, wsCover, "Report Summary");
+
+      const dailyRows = dailySummary.map((x) => ({ Date:x.date, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
+      const wsDaily = XLSX.utils.json_to_sheet(dailyRows.length ? dailyRows : [{ Date:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
+      styleWorksheet(wsDaily, dailyRows);
+      XLSX.utils.book_append_sheet(wb, wsDaily, "Daily Summary");
+
+      const monthlyRows = monthlySummary.map((x) => ({ Month:x.month, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
+      const wsMonthly = XLSX.utils.json_to_sheet(monthlyRows.length ? monthlyRows : [{ Month:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
+      styleWorksheet(wsMonthly, monthlyRows);
+      XLSX.utils.book_append_sheet(wb, wsMonthly, "Monthly Summary");
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      styleWorksheet(ws, rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Vouchers");
+
+      const summaryRows = outletSummary.map((x) => ({ Outlet:x.outlet, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
+      const wsOutlet = XLSX.utils.json_to_sheet(summaryRows.length ? summaryRows : [{ Outlet:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
+      styleWorksheet(wsOutlet, summaryRows);
+      XLSX.utils.book_append_sheet(wb, wsOutlet, "Outlet Summary");
+
+      const staffSummaryRows = staffSummary.map((x) => ({ Staff:x.staff, Total:x.total, Issued:x.issued, Redeemed:x.redeemed, Expired:x.expired, Cancelled:x.cancelled }));
+      const wsStaff = XLSX.utils.json_to_sheet(staffSummaryRows.length ? staffSummaryRows : [{ Staff:"", Total:"", Issued:"", Redeemed:"", Expired:"", Cancelled:"" }]);
+      styleWorksheet(wsStaff, staffSummaryRows);
+      XLSX.utils.book_append_sheet(wb, wsStaff, "Staff Summary");
+
+      const voucherCodes = filteredDocsForExport.map(x => x.voucher_code).filter(Boolean);
+      const logs = await getLogsForVoucherCodes(voucherCodes);
+      const logRows = logs.map((log) => ({
+        "Voucher Code": log.voucher_code || "",
+        "Internal Ref": log.voucher_ref || "",
+        "Action": log.action || "",
+        "Action At": formatDateTime(log.action_at),
+        "Action By": log.action_by_name || log.action_by_uid || "",
+        "Note": log.note || ""
+      }));
+      const wsLogs = XLSX.utils.json_to_sheet(logRows.length ? logRows : [{ "Voucher Code":"", "Internal Ref":"", "Action":"", "Action At":"", "Action By":"", "Note":"No logs" }]);
+      styleWorksheet(wsLogs, logRows);
+      XLSX.utils.book_append_sheet(wb, wsLogs, "Voucher Logs");
+
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
+      const scope = profile.role === "admin" ? "all-departments" : (profile.department || "department");
+      const filename = `voucher_report_${scope}_${filterStatus}_${y}${m}${d}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    }
+
+    async function loadDashboard() {
+      let total = 0, issued = 0, redeemed = 0, expired = 0, cancelled = 0;
+      const snap = await getBaseSnapshot();
+      const filteredDocs = [];
+
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!matchesFilter(data)) return;
+        filteredDocs.push(data);
+        total++;
+        const displayStatus = getDisplayStatus(data);
+        if (displayStatus === "issued") issued++;
+        else if (displayStatus === "redeemed") redeemed++;
+        else if (displayStatus === "expired") expired++;
+        else if (displayStatus === "cancelled") cancelled++;
+      });
+
+      totalEl.textContent = total;
+      issuedEl.textContent = issued;
+      redeemedEl.textContent = redeemed;
+      expiredEl.textContent = expired;
+      cancelledEl.textContent = cancelled;
+
+      const outletSummary = buildOutletSummary(filteredDocs);
+      renderOutletSummaryTable(outletSummary);
+      const staffSummary = buildStaffSummary(filteredDocs);
+      renderStaffSummaryTable(staffSummary);
+      renderCharts(filteredDocs);
+
+      if (!filteredDocs.length) {
+        tbody.innerHTML = `<tr><td colspan="7">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
+        return;
+      }
+
+      filteredDocs.sort((a,b) => (toDateObject(b.created_at)?.getTime()||0) - (toDateObject(a.created_at)?.getTime()||0));
+      const latest10 = filteredDocs.slice(0, 10);
+      tbody.innerHTML = latest10.map((data) => {
+        const displayStatus = getDisplayStatus(data);
+        return `
+          <tr>
+            <td>${data.voucher_code || "-"}</td>
+            <td>${data.internal_no || "-"}</td>
+            <td>${data.name || "-"}</td>
+            <td>${data.room || "-"}</td>
+            <td>${data.outlet || "-"}</td>
+            <td><span class="status-pill status-${displayStatus}">${displayStatus}</span></td>
+            <td>${formatDate(data.expiry_date)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    applyFilterBtn.addEventListener("click", () => loadDashboard());
+    resetFilterBtn.addEventListener("click", () => {
+      dateFromEl.value = "";
+      dateToEl.value = "";
+      statusFilterEl.value = "all";
+      if (profile.role === "admin") {
+        departmentFilterEl.value = "all";
+        populateOutletOptions(profile.department || "FB", profile.role);
+      } else {
+        departmentFilterEl.value = profile.department || "all";
+        populateOutletOptions(profile.department || "FB", profile.role);
+      }
+      outletFilterEl.value = "all";
+      loadDashboard();
+    });
+
+    document.getElementById("exportAllBtn").addEventListener("click", () => exportVouchers("all"));
+    document.getElementById("exportIssuedBtn").addEventListener("click", () => exportVouchers("issued"));
+    document.getElementById("exportRedeemedBtn").addEventListener("click", () => exportVouchers("redeemed"));
+
+    loadDashboard().catch((err) => {
+      tbody.innerHTML = `<tr><td colspan="7">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+    });
+  </script>
+</body>
+</html>

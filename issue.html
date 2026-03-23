@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Issue Voucher</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Issue Voucher</h1>
+    <div class="card">
+      <input id="name" placeholder="Name" />
+      <input id="phone" placeholder="Phone" />
+      <input id="room" placeholder="Room No" />
+      <select id="outlet"><option value="">Select Outlet</option></select>
+      <button id="createBtn">Generate Voucher</button>
+    </div>
+    <div id="result" class="card hidden"></div>
+    <div id="qrcode" class="card hidden"></div>
+    <div class="nav" id="navMenu"></div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { requireRole, renderNav } from "./auth-guard.js";
+    import {
+      collection, addDoc, serverTimestamp, query, where, getDocs, doc, runTransaction
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const { user, profile } = await requireRole(["staff", "supervisor", "manager", "admin"]);
+    renderNav(profile);
+
+    const outletMap = {
+      FB: ["The Taste", "Mangrove", "Aroonsawat Lounge", "Room Service", "Banquet"],
+      FO: ["Front Desk", "Concierge"],
+      SPA: ["Spa Reception", "Treatment"]
+    };
+
+    const result = document.getElementById("result");
+    const qrBox = document.getElementById("qrcode");
+    const createBtn = document.getElementById("createBtn");
+    const outletEl = document.getElementById("outlet");
+
+    function populateOutletOptions() {
+      const dept = profile.department || "FB";
+      const outlets = outletMap[dept] || [];
+      outletEl.innerHTML = '<option value="">Select Outlet</option>' +
+        outlets.map(outlet => `<option value="${outlet}">${outlet}</option>`).join("");
+      if (profile.outlet && outlets.includes(profile.outlet)) outletEl.value = profile.outlet;
+    }
+    populateOutletOptions();
+
+    function getYearMonth() {
+      const now = new Date();
+      const year = now.getFullYear().toString().slice(-2);
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      return year + month;
+    }
+
+    async function generateVoucherNo(department) {
+      const ym = getYearMonth();
+      const key = `${department}_${ym}`;
+      const ref = doc(db, "running_numbers", key);
+      let newNumber = 1;
+      await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(ref);
+        if (!snap.exists()) {
+          transaction.set(ref, { department, year_month: ym, current_number: 1 });
+        } else {
+          newNumber = (snap.data().current_number || 0) + 1;
+          transaction.update(ref, { current_number: newNumber });
+        }
+      });
+      return `${department}-${ym}-${String(newNumber).padStart(4, "0")}`;
+    }
+
+    function generateVoucherCode(length = 12) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ234679";
+      let raw = "";
+      for (let i = 0; i < length; i++) raw += chars.charAt(Math.floor(Math.random() * chars.length));
+      return `${raw.slice(0,4)}-${raw.slice(4,8)}-${raw.slice(8,12)}`;
+    }
+
+    async function generateUniqueVoucherCode() {
+      let code = "", exists = true;
+      while (exists) {
+        code = generateVoucherCode();
+        const q = query(collection(db, "vouchers"), where("voucher_code", "==", code));
+        const snap = await getDocs(q);
+        exists = !snap.empty;
+      }
+      return code;
+    }
+
+    function renderQr(text) {
+      qrBox.classList.remove("hidden");
+      qrBox.innerHTML = '<h3>QR Code</h3><div id="qr-inner"></div>';
+      new QRCode(document.getElementById("qr-inner"), { text, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
+    }
+
+    createBtn.addEventListener("click", async () => {
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const room = document.getElementById("room").value.trim();
+      const outlet = outletEl.value;
+      if (!name) return alert("กรุณาใส่ชื่อ");
+      if (!outlet) return alert("กรุณาเลือก Outlet");
+
+      try {
+        const internalNo = await generateVoucherNo(profile.department || "FB");
+        const voucherCode = await generateUniqueVoucherCode();
+
+        await addDoc(collection(db, "vouchers"), {
+          internal_no: internalNo,
+          voucher_code: voucherCode,
+          name, phone, room,
+          department: profile.department || "FB",
+          outlet,
+          status: "issued",
+          issued_by_uid: user.uid,
+          issued_by_name: profile.name,
+          issued_by_role: profile.role,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+          expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        });
+
+        await addDoc(collection(db, "voucher_logs"), {
+          voucher_code: voucherCode,
+          voucher_ref: internalNo,
+          action: "issued",
+          action_at: serverTimestamp(),
+          action_by_uid: user.uid,
+          action_by_name: profile.name,
+          note: `Voucher issued for ${name || "-"}`
+        });
+
+        const voucherLink = `voucher-detail.html?code=${encodeURIComponent(voucherCode)}`;
+        result.classList.remove("hidden");
+        result.innerHTML = `
+          <p class="success">สร้าง Voucher สำเร็จ</p>
+          <p><strong>Voucher Code:</strong> ${voucherCode}</p>
+          <p class="ref">Ref: ${internalNo}</p>
+          <p><strong>Outlet:</strong> ${outlet}</p>
+          <p><a href="${voucherLink}" target="_blank">Open Voucher Detail</a></p>
+        `;
+        renderQr(voucherCode);
+      } catch (err) {
+        result.classList.remove("hidden");
+        result.innerHTML = `<p class="error">สร้าง Voucher ไม่สำเร็จ: ${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

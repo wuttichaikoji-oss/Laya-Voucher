@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laya Voucher Print Template</title>
+  <style>
+    :root { --card-w: 86mm; --card-h: 54mm; --accent: #1f6f78; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:24px; font-family:Arial, Helvetica, sans-serif; background:#f3f5f7; color:#222; }
+    .toolbar { max-width:1100px; margin:0 auto 16px; display:flex; gap:10px; flex-wrap:wrap; }
+    .toolbar button { border:0; border-radius:10px; padding:10px 14px; font-size:14px; cursor:pointer; background:#111827; color:#fff; }
+    .sheet { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit, minmax(330px,1fr)); gap:24px; align-items:start; }
+    .voucher-card { width:var(--card-w); min-height:var(--card-h); background:#fff; border-radius:4px; box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:hidden; border:1px solid #ececec; transform-origin:top left; zoom:1.35; }
+    .front,.back { padding:4.5mm; position:relative; }
+    .front-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:4mm; min-height:calc(var(--card-h) - 9mm); }
+    .headline-small { font-size:4.1mm; color:#3c3c3c; margin-bottom:.5mm; }
+    .headline-big { font-size:12mm; line-height:.92; font-weight:700; margin:0 0 2mm; }
+    .front-body { font-size:3.2mm; line-height:1.35; color:#444; margin-bottom:2.2mm; }
+    .front-note { font-size:2.7mm; color:#666; margin-bottom:3mm; }
+    .voucher-no { display:inline-block; border:.35mm solid #bdbdbd; padding:1.2mm 2.5mm; font-size:4.6mm; font-weight:700; color:#505050; margin-top:auto; }
+    .brand-wrap { display:flex; flex-direction:column; gap:3mm; align-items:center; }
+    .brand-logo { width:26mm; height:26mm; border-radius:50%; border:.3mm dashed #9ec7c6; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--accent); font-size:3mm; font-weight:700; padding:2mm; }
+    .venue-photo { width:100%; height:24mm; border:.3mm solid #d5d5d5; background:linear-gradient(135deg, #f3efe7, #dfd2bc); display:flex; align-items:center; justify-content:center; text-align:center; color:#7c6b55; font-size:3mm; padding:2mm; }
+    .back-grid { display:grid; grid-template-columns:1fr 26mm; gap:4mm; min-height:calc(var(--card-h) - 9mm); }
+    .fill-line { margin-bottom:3mm; }
+    .fill-line .label { font-size:3.8mm; font-weight:700; color:#555; display:inline-block; min-width:22mm; }
+    .line { display:inline-block; width:calc(100% - 24mm); border-bottom:.3mm solid #cfcfcf; height:4mm; vertical-align:bottom; }
+    .terms-title { font-size:3.5mm; font-style:italic; font-weight:700; margin:1mm 0 1mm; color:#444; }
+    .terms { margin:0; padding-left:4mm; font-size:2.9mm; line-height:1.45; color:#444; }
+    .auth-box { border:.3mm solid #d0d0d0; height:29mm; position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:2mm; }
+    .auth-tag { position:absolute; top:-.5mm; left:50%; transform:translateX(-50%); background:#4a4a4a; color:#fff; font-size:2.4mm; padding:.8mm 2mm; }
+    .signature { width:100%; height:13mm; display:flex; align-items:center; justify-content:center; font-size:7mm; color:#2857c5; font-family:"Brush Script MT", cursive; transform:rotate(-3deg); }
+    .gm-name,.gm-title { text-align:center; line-height:1.15; }
+    .gm-name { font-size:2.5mm; color:#444; margin-top:1mm; }
+    .gm-title { font-size:2.5mm; color:#666; }
+    @media print { body { background:#fff; padding:0; } .toolbar { display:none!important; } .sheet { display:block; max-width:none; } .voucher-card { page-break-inside:avoid; box-shadow:none; border:0; zoom:1; margin:0 auto 8mm; } @page { size:A4 portrait; margin:10mm; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="window.print()">Print / Save PDF</button>
+    <button onclick="fillSample('drink')">Sample: 1 Drink</button>
+    <button onclick="fillSample('coffee')">Sample: Coffee Voucher</button>
+  </div>
+  <div class="sheet">
+    <div class="voucher-card front" id="voucherFront">
+      <div class="front-grid">
+        <div style="display:flex;flex-direction:column;">
+          <div class="headline-small" id="frontTitleSmall">COMPLIMENTARY</div>
+          <div class="headline-big" id="frontTitleBig">1 DRINK</div>
+          <div class="front-body" id="frontDescription">Show this voucher at AROONSAWAT<br>to receive 1 complimentary drink<br>(Hot Coffee, Iced Coffee, or Soft Drink)</div>
+          <div class="front-note" id="frontCashNote">* This voucher cannot be exchanged for cash.</div>
+          <div class="voucher-no" id="voucherNo">NO. AR20250352</div>
+        </div>
+        <div class="brand-wrap">
+          <div class="brand-logo" id="brandLogo">LOGO / BRAND</div>
+          <div class="venue-photo" id="venuePhoto">Venue / outlet image</div>
+        </div>
+      </div>
+    </div>
+    <div class="voucher-card back" id="voucherBack">
+      <div class="back-grid">
+        <div>
+          <div class="fill-line"><span class="label">VALID DATE:</span><span class="line"></span></div>
+          <div class="fill-line"><span class="label">ISSUED BY:</span><span class="line"></span></div>
+          <div class="fill-line"><span class="label">REASON:</span><span class="line"></span></div>
+          <div class="terms-title">Terms &amp; Conditions</div>
+          <ul class="terms">
+            <li>This voucher is redeemable only at Aroonsawat.</li>
+            <li>Must be presented to staff before placing an order.</li>
+            <li>This voucher can be used only for the drink specified on the voucher.</li>
+            <li>Cannot be combined with other promotions, discounts, or special offers.</li>
+            <li>This voucher is non-transferable, non-refundable, and cannot be exchanged for cash.</li>
+            <li>Management reserves the right to amend these terms and conditions without prior notice.</li>
+          </ul>
+        </div>
+        <div class="auth-box">
+          <div class="auth-tag">AUTHORIZE BY:</div>
+          <div class="signature" id="signatureBox">GM</div>
+          <div class="gm-name" id="gmName">Nanthaphat Santisaksakul</div>
+          <div class="gm-title" id="gmTitle">General Manager</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const samples = {
+      drink: { small:'COMPLIMENTARY', big:'1 DRINK', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary drink<br>(Hot Coffee, Iced Coffee, or Soft Drink)', note:'* This voucher cannot be exchanged for cash.', no:'NO. AR20250352', logo:'AROONSAWAT / LOGO', photo:'Outlet photo', gmSignature:'GM', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' },
+      coffee: { small:'COMPLIMENTARY', big:'1 COFFEE', description:'Show this voucher at AROONSAWAT<br>to receive 1 complimentary coffee<br>(Hot or Iced)', note:'* Valid for selected menu only.', no:'NO. AR20250399', logo:'COFFEE / LOGO', photo:'Coffee counter image', gmSignature:'GM', gmName:'Nanthaphat Santisaksakul', gmTitle:'General Manager' }
+    };
+    function fillSample(key) {
+      const s = samples[key];
+      document.getElementById('frontTitleSmall').innerHTML = s.small;
+      document.getElementById('frontTitleBig').innerHTML = s.big;
+      document.getElementById('frontDescription').innerHTML = s.description;
+      document.getElementById('frontCashNote').innerHTML = s.note;
+      document.getElementById('voucherNo').innerHTML = s.no;
+      document.getElementById('brandLogo').innerHTML = s.logo;
+      document.getElementById('venuePhoto').innerHTML = s.photo;
+      document.getElementById('signatureBox').innerHTML = s.gmSignature;
+      document.getElementById('gmName').innerHTML = s.gmName;
+      document.getElementById('gmTitle').innerHTML = s.gmTitle;
+    }
+    fillSample('drink');
+  </script>
+</body>
+</html>

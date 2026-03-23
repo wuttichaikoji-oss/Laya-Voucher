@@ -1,0 +1,143 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f3f5f7;
+  margin: 0;
+  padding: 20px;
+  color: #222;
+}
+.container { max-width: 1080px; margin: 0 auto; }
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+input, select, textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #d7dbe7;
+  border-radius: 10px;
+  font-size: 16px;
+  background: #fff;
+}
+button {
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #0d6efd;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+button:hover { opacity: .95; }
+.nav { display:flex; gap:10px; flex-wrap:wrap; margin-top: 16px; }
+.nav a { color: #0d6efd; text-decoration:none; background:#fff; padding:10px 12px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.08); }
+.hidden { display: none !important; }
+.success { color: #15803d; font-weight: 700; }
+.error { color: #b91c1c; font-weight: 700; }
+.ref { font-size: 12px; color: #6b7280; }
+
+.stats-grid {
+  display:grid;
+  grid-template-columns: repeat(2,1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+.stat-card {
+  background:#fff; border-radius:14px; padding:16px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+.stat-label { font-size:14px; color:#6b7280; margin-bottom:6px; }
+.stat-value { font-size:28px; font-weight:700; }
+
+.table-wrap { overflow-x:auto; }
+.voucher-table { width:100%; border-collapse: collapse; }
+.voucher-table th, .voucher-table td {
+  padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:left; font-size:14px;
+}
+.status-pill {
+  display:inline-block; padding:4px 10px; border-radius:999px;
+  font-size:12px; font-weight:700; text-transform:capitalize;
+}
+.status-issued { background:#dbeafe; color:#1d4ed8; }
+.status-redeemed { background:#dcfce7; color:#15803d; }
+.status-expired { background:#ffedd5; color:#c2410c; }
+.status-cancelled { background:#fee2e2; color:#b91c1c; }
+
+.filter-grid { display:grid; grid-template-columns:1fr; gap:12px; }
+.filter-grid label { display:block; font-size:14px; margin-bottom:6px; color:#6b7280; }
+.filter-actions { margin-top:12px; }
+.filter-actions button + button { margin-left:8px; }
+
+.timeline-list { display:flex; flex-direction:column; gap:12px; }
+.timeline-item { border-left:3px solid #d1d5db; padding-left:12px; }
+.timeline-item .time { font-size:12px; color:#6b7280; margin-bottom:4px; }
+.timeline-item .action { font-weight:700; text-transform:capitalize; }
+.timeline-item .note { margin-top:4px; color:#374151; }
+
+.chart-grid { display:grid; grid-template-columns:1fr; gap:20px; }
+.chart-grid canvas { width:100%; max-height:320px; }
+
+.modal {
+  position:fixed; inset:0; background:rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center; padding:20px; z-index:999;
+}
+.modal-card {
+  background:#fff; width:100%; max-width:480px; border-radius:16px;
+  padding:18px; box-shadow:0 8px 30px rgba(0,0,0,.18);
+}
+.modal-actions { display:flex; gap:8px; }
+
+.voucher-page { background:#eef2f7; padding:24px; }
+.print-toolbar { max-width:900px; margin:0 auto 18px; display:flex; gap:10px; }
+.voucher-print-card {
+  max-width:900px; margin:0 auto; background:#fff; border-radius:22px;
+  padding:28px; box-shadow:0 8px 30px rgba(0,0,0,.12); border:1px solid #e5e7eb;
+}
+.voucher-head { display:flex; justify-content:space-between; align-items:start; gap:12px; margin-bottom:24px; }
+.voucher-head h1 { margin:0 0 6px; font-size:32px; }
+.voucher-subtitle { margin:0; color:#6b7280; }
+.voucher-main { display:grid; grid-template-columns:1.3fr .9fr; gap:24px; align-items:center; }
+.voucher-left .label { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#6b7280; margin:14px 0 4px; }
+.voucher-left h2 { margin:0; font-size:28px; word-break:break-word; }
+.voucher-left p { margin:0; font-size:16px; }
+.voucher-right { text-align:center; }
+#qrcode, #detailQr {
+  display:inline-block; padding:14px; border-radius:18px; background:#fff; border:1px solid #e5e7eb;
+}
+.scan-note { margin-top:10px; color:#6b7280; font-size:14px; }
+.voucher-footer { margin-top:24px; padding-top:18px; border-top:1px dashed #d1d5db; }
+.terms { color:#6b7280; font-size:13px; }
+.status-badge {
+  padding:8px 14px; border-radius:999px; font-weight:700; font-size:13px; text-transform:uppercase;
+}
+.detail-actions { margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }
+
+.check-row {
+  display:flex; align-items:center; gap:8px; margin:10px 0 14px; font-size:14px;
+}
+.check-row input { width:auto; margin:0; }
+
+@media (min-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(5,1fr); }
+  .filter-grid { grid-template-columns: repeat(5,1fr); }
+}
+@media (min-width: 992px) {
+  .chart-grid { grid-template-columns: repeat(3,1fr); }
+}
+@media (max-width: 768px) {
+  .voucher-main { grid-template-columns:1fr; }
+  .voucher-head { flex-direction:column; }
+  .voucher-print-card { padding:20px; }
+}
+@media print {
+  .no-print, .nav, .modal, .detail-actions, .print-toolbar { display:none !important; }
+  body { background:#fff; padding:0; }
+  .voucher-print-card, #detailCard {
+    box-shadow:none; border:0; border-radius:0; max-width:none; margin:0; padding:0;
+  }
+  @page { size:A4; margin:12mm; }
+}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Voucher</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Search Voucher</h1>
+    <div class="card">
+      <input id="searchInput" type="text" placeholder="ใส่ Voucher Code เช่น K7MP-X4RD-9QHL" />
+      <button id="searchBtn">Search</button>
+    </div>
+    <div id="result" class="card hidden"></div>
+    <div id="cancelModal" class="modal hidden">
+      <div class="modal-card">
+        <h3>Cancel Voucher</h3>
+        <p id="cancelVoucherInfo"></p>
+        <textarea id="cancelReason" placeholder="กรอกเหตุผลในการยกเลิก"></textarea>
+        <div class="modal-actions">
+          <button id="confirmCancelBtn" type="button">Confirm Cancel</button>
+          <button id="closeCancelBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+    <div class="nav" id="navMenu"></div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { requireRole, renderNav } from "./auth-guard.js";
+    import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const { user, profile } = await requireRole(["staff", "supervisor", "manager", "admin"]);
+    renderNav(profile);
+
+    const searchBtn = document.getElementById("searchBtn");
+    const searchInput = document.getElementById("searchInput");
+    const result = document.getElementById("result");
+    const cancelModal = document.getElementById("cancelModal");
+    const cancelReasonEl = document.getElementById("cancelReason");
+    const cancelVoucherInfo = document.getElementById("cancelVoucherInfo");
+    const confirmCancelBtn = document.getElementById("confirmCancelBtn");
+    const closeCancelBtn = document.getElementById("closeCancelBtn");
+
+    let currentDocId = null;
+    let currentData = null;
+
+    function formatDate(value) {
+      if (!value) return "-";
+      try {
+        if (value.toDate) return value.toDate().toLocaleString();
+        return new Date(value).toLocaleString();
+      } catch { return "-"; }
+    }
+
+    function openCancelPrompt() {
+      if (!currentData) return;
+      cancelReasonEl.value = "";
+      cancelVoucherInfo.textContent = `Voucher: ${currentData.voucher_code || "-"} (${currentData.internal_no || "-"})`;
+      cancelModal.classList.remove("hidden");
+    }
+    function closeCancelPrompt() { cancelModal.classList.add("hidden"); }
+    closeCancelBtn.addEventListener("click", closeCancelPrompt);
+
+    async function confirmCancelVoucher() {
+      const reason = cancelReasonEl.value.trim();
+      if (!currentDocId || !currentData) return alert("ไม่พบข้อมูล voucher");
+      if (!reason) return alert("กรุณากรอกเหตุผลในการยกเลิก");
+
+      try {
+        const ref = doc(db, "vouchers", currentDocId);
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) throw new Error("Voucher ไม่พบในระบบ");
+          const latest = snap.data();
+          if (latest.status !== "issued") throw new Error("ยกเลิกได้เฉพาะ voucher ที่ยังเป็น issued");
+          transaction.update(ref, {
+            status: "cancelled",
+            cancel_reason: reason,
+            cancelled_at: serverTimestamp(),
+            cancelled_by_uid: user.uid,
+            cancelled_by_name: profile.name,
+            updated_at: serverTimestamp()
+          });
+        });
+
+        await addDoc(collection(db, "voucher_logs"), {
+          voucher_code: currentData.voucher_code,
+          voucher_ref: currentData.internal_no || "",
+          action: "cancelled",
+          action_at: serverTimestamp(),
+          action_by_uid: user.uid,
+          action_by_name: profile.name,
+          note: reason
+        });
+
+        closeCancelPrompt();
+        result.innerHTML = `
+          <h2>${currentData.voucher_code || "-"}</h2>
+          <p class="success">ยกเลิก Voucher สำเร็จแล้ว</p>
+          <p><strong>เหตุผล:</strong> ${reason}</p>
+          <p class="ref">Ref: ${currentData.internal_no || "-"}</p>
+        `;
+      } catch (err) {
+        alert("Cancel ไม่สำเร็จ: " + err.message);
+      }
+    }
+    confirmCancelBtn.addEventListener("click", confirmCancelVoucher);
+
+    searchBtn.addEventListener("click", async () => {
+      const voucherCode = searchInput.value.trim();
+      if (!voucherCode) return alert("กรุณาใส่ Voucher Code");
+
+      result.classList.remove("hidden");
+      result.innerHTML = "กำลังค้นหา...";
+
+      try {
+        const q = query(collection(db, "vouchers"), where("voucher_code", "==", voucherCode));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          result.innerHTML = `<p class="error">ไม่พบ Voucher นี้</p>`;
+          return;
+        }
+
+        const found = snap.docs[0];
+        currentDocId = found.id;
+        currentData = found.data();
+        const data = currentData;
+        const detailLink = `voucher-detail.html?code=${encodeURIComponent(data.voucher_code || "")}`;
+
+        result.innerHTML = `
+          <h2>${data.voucher_code || "-"}</h2>
+          <p><strong>ชื่อผู้รับ:</strong> ${data.name || "-"}</p>
+          <p><strong>เบอร์โทร:</strong> ${data.phone || "-"}</p>
+          <p><strong>ห้อง:</strong> ${data.room || "-"}</p>
+          <p><strong>Outlet:</strong> ${data.outlet || "-"}</p>
+          <p><strong>สถานะ:</strong> ${data.status || "-"}</p>
+          <p><strong>วันที่สร้าง:</strong> ${formatDate(data.created_at)}</p>
+          <p><strong>หมดอายุ:</strong> ${formatDate(data.expiry_date)}</p>
+          <p class="ref">Ref: ${data.internal_no || "-"}</p>
+          <p><a href="${detailLink}">Open Detail Page</a></p>
+          <div id="actionArea"></div>
+        `;
+
+        const actionArea = document.getElementById("actionArea");
+        if (["supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued") {
+          actionArea.innerHTML = `<button id="cancelBtn" type="button">Cancel Voucher</button>`;
+          document.getElementById("cancelBtn").addEventListener("click", openCancelPrompt);
+        }
+      } catch (err) {
+        result.innerHTML = `<p class="error">เกิดข้อผิดพลาด: ${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

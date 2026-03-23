@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voucher</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+</head>
+<body class="voucher-page">
+  <div class="print-toolbar no-print">
+    <button id="printBtn" type="button">Print / Save PDF</button>
+    <a href="voucher-detail.html">Back</a>
+  </div>
+
+  <div class="voucher-print-card" id="voucherCard">
+    <div class="voucher-head">
+      <div>
+        <h1>Laya Resort</h1>
+        <p class="voucher-subtitle">Official Voucher</p>
+      </div>
+      <div id="statusBadge" class="status-badge">Loading</div>
+    </div>
+
+    <div class="voucher-main">
+      <div class="voucher-left">
+        <p class="label">Voucher Code</p><h2 id="voucherCode">-</h2>
+        <p class="label">Recipient</p><p id="recipientName">-</p>
+        <p class="label">Room</p><p id="roomNo">-</p>
+        <p class="label">Department / Outlet</p><p id="deptOutlet">-</p>
+        <p class="label">Expiry</p><p id="expiryText">-</p>
+        <p class="label">Reference</p><p id="internalRef" class="ref">-</p>
+      </div>
+      <div class="voucher-right">
+        <div id="qrcode"></div>
+        <p class="scan-note">Present this QR code when redeeming</p>
+      </div>
+    </div>
+
+    <div class="voucher-footer">
+      <p id="statusNote">-</p>
+      <p class="terms">This voucher is valid for one-time use only and is subject to outlet policy.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    const voucherCodeEl = document.getElementById("voucherCode");
+    const recipientNameEl = document.getElementById("recipientName");
+    const roomNoEl = document.getElementById("roomNo");
+    const deptOutletEl = document.getElementById("deptOutlet");
+    const expiryTextEl = document.getElementById("expiryText");
+    const internalRefEl = document.getElementById("internalRef");
+    const statusBadgeEl = document.getElementById("statusBadge");
+    const statusNoteEl = document.getElementById("statusNote");
+    const printBtn = document.getElementById("printBtn");
+
+    function toDateObject(value) {
+      if (!value) return null;
+      try { return value.toDate ? value.toDate() : new Date(value); } catch { return null; }
+    }
+    function formatDate(value) {
+      const d = toDateObject(value);
+      return d ? d.toLocaleDateString("th-TH") : "-";
+    }
+    function getDisplayStatus(data) {
+      const expiry = toDateObject(data.expiry_date);
+      if (data.status === "issued" && expiry && new Date() > expiry) return "expired";
+      return data.status || "-";
+    }
+    function applyStatusUI(status) {
+      statusBadgeEl.className = "status-badge status-" + status;
+      const map = {
+        issued: "This voucher is active and ready to redeem.",
+        redeemed: "This voucher has already been redeemed.",
+        expired: "This voucher is expired and can no longer be used.",
+        cancelled: "This voucher has been cancelled."
+      };
+      statusBadgeEl.textContent = status;
+      statusNoteEl.textContent = map[status] || "-";
+    }
+
+    async function loadVoucher() {
+      if (!code) { voucherCodeEl.textContent = "Invalid voucher"; return; }
+      const q = query(collection(db, "vouchers"), where("voucher_code", "==", code));
+      const snap = await getDocs(q);
+      if (snap.empty) { voucherCodeEl.textContent = "Voucher not found"; return; }
+      const data = snap.docs[0].data();
+      const displayStatus = getDisplayStatus(data);
+      voucherCodeEl.textContent = data.voucher_code || "-";
+      recipientNameEl.textContent = data.name || "-";
+      roomNoEl.textContent = data.room || "-";
+      deptOutletEl.textContent = `${data.department || "-"} / ${data.outlet || "-"}`;
+      expiryTextEl.textContent = formatDate(data.expiry_date);
+      internalRefEl.textContent = data.internal_no || "-";
+      applyStatusUI(displayStatus);
+      new QRCode(document.getElementById("qrcode"), {
+        text: data.voucher_code || "",
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    printBtn.addEventListener("click", () => window.print());
+    loadVoucher().catch((err) => {
+      voucherCodeEl.textContent = "Load failed";
+      statusNoteEl.textContent = err.message;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voucher Detail</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Voucher Detail</h1>
+    <div class="card no-print">
+      <input id="voucherInput" type="text" placeholder="ใส่ Voucher Code เช่น K7MP-X4RD-9QHL" />
+      <button id="loadBtn">Load Voucher</button>
+    </div>
+
+    <div class="card hidden" id="detailCard">
+      <div class="voucher-head">
+        <div>
+          <h2 id="voucherCodeText">-</h2>
+          <p class="ref" id="internalRefText">-</p>
+        </div>
+        <div id="statusBadge" class="status-badge">-</div>
+      </div>
+
+      <div class="voucher-main">
+        <div class="voucher-left">
+          <p class="label">Recipient</p><p id="recipientText">-</p>
+          <p class="label">Phone</p><p id="phoneText">-</p>
+          <p class="label">Room</p><p id="roomText">-</p>
+          <p class="label">Department / Outlet</p><p id="deptOutletText">-</p>
+          <p class="label">Created At</p><p id="createdAtText">-</p>
+          <p class="label">Expiry Date</p><p id="expiryText">-</p>
+          <p class="label">Issued By</p><p id="issuedByText">-</p>
+          <div id="extraInfoBox"></div>
+        </div>
+
+        <div class="voucher-right">
+          <div id="detailQr"></div>
+          <p class="scan-note">Scan this QR to redeem</p>
+        </div>
+      </div>
+
+      <div class="detail-actions no-print" id="detailActions"></div>
+    </div>
+
+    <div class="card" id="timelineCard">
+      <h3>Timeline</h3>
+      <div id="timelineBody">ยังไม่มีประวัติ</div>
+    </div>
+
+    <div class="nav no-print" id="navMenu"></div>
+  </div>
+
+  <div id="cancelModal" class="modal hidden no-print">
+    <div class="modal-card">
+      <h3>Cancel Voucher</h3>
+      <p id="cancelVoucherInfo"></p>
+      <textarea id="cancelReason" placeholder="กรอกเหตุผลในการยกเลิก"></textarea>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" type="button">Confirm Cancel</button>
+        <button id="closeCancelBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { requireRole, renderNav } from "./auth-guard.js";
+    import {
+      collection, query, where, getDocs, doc, runTransaction, serverTimestamp, addDoc, orderBy
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const { user, profile } = await requireRole(["staff", "supervisor", "manager", "admin"]);
+    renderNav(profile);
+
+    const params = new URLSearchParams(window.location.search);
+    const initialCode = params.get("code");
+
+    const voucherInput = document.getElementById("voucherInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const detailCard = document.getElementById("detailCard");
+    const voucherCodeText = document.getElementById("voucherCodeText");
+    const internalRefText = document.getElementById("internalRefText");
+    const statusBadge = document.getElementById("statusBadge");
+    const recipientText = document.getElementById("recipientText");
+    const phoneText = document.getElementById("phoneText");
+    const roomText = document.getElementById("roomText");
+    const deptOutletText = document.getElementById("deptOutletText");
+    const createdAtText = document.getElementById("createdAtText");
+    const expiryText = document.getElementById("expiryText");
+    const issuedByText = document.getElementById("issuedByText");
+    const extraInfoBox = document.getElementById("extraInfoBox");
+    const detailQr = document.getElementById("detailQr");
+    const detailActions = document.getElementById("detailActions");
+    const timelineBody = document.getElementById("timelineBody");
+
+    const cancelModal = document.getElementById("cancelModal");
+    const cancelVoucherInfo = document.getElementById("cancelVoucherInfo");
+    const cancelReason = document.getElementById("cancelReason");
+    const confirmCancelBtn = document.getElementById("confirmCancelBtn");
+    const closeCancelBtn = document.getElementById("closeCancelBtn");
+
+    let currentDocId = null;
+    let currentData = null;
+
+    function toDateObject(value) {
+      if (!value) return null;
+      try { return value.toDate ? value.toDate() : new Date(value); } catch { return null; }
+    }
+    function formatDateTime(value) {
+      const d = toDateObject(value);
+      return d ? d.toLocaleString("th-TH") : "-";
+    }
+    function getDisplayStatus(data) {
+      const expiry = toDateObject(data.expiry_date);
+      if (data.status === "issued" && expiry && new Date() > expiry) return "expired";
+      return data.status || "-";
+    }
+    function setStatusBadge(status) {
+      statusBadge.className = "status-badge status-" + status;
+      statusBadge.textContent = status;
+    }
+    function renderQr(code) {
+      detailQr.innerHTML = "";
+      new QRCode(detailQr, { text: code, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
+    }
+    function renderExtraInfo(data, status) {
+      let html = "";
+      if (status === "redeemed") {
+        html += `<p class="label">Redeemed At</p><p>${formatDateTime(data.redeemed_at)}</p>
+                 <p class="label">Redeemed By</p><p>${data.redeemed_by_name || data.redeemed_by_uid || "-"}</p>`;
+      }
+      if (status === "cancelled") {
+        html += `<p class="label">Cancelled At</p><p>${formatDateTime(data.cancelled_at)}</p>
+                 <p class="label">Cancelled By</p><p>${data.cancelled_by_name || data.cancelled_by_uid || "-"}</p>
+                 <p class="label">Cancel Reason</p><p>${data.cancel_reason || "-"}</p>`;
+      }
+      extraInfoBox.innerHTML = html;
+    }
+    function canCancel(data) { return ["supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued"; }
+    function canRedeem(data) { return ["staff", "supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued"; }
+
+    function renderActions(data) {
+      const status = getDisplayStatus(data);
+      let html = `<button id="printBtn" type="button">Print / Save PDF</button>`;
+      if (status === "issued" && canRedeem(data)) html += `<button id="redeemBtn" type="button">Redeem</button>`;
+      if (status === "issued" && canCancel(data)) html += `<button id="cancelBtn" type="button">Cancel</button>`;
+      detailActions.innerHTML = html;
+      document.getElementById("printBtn").addEventListener("click", () => window.print());
+      const redeemBtn = document.getElementById("redeemBtn");
+      if (redeemBtn) redeemBtn.addEventListener("click", redeemVoucher);
+      const cancelBtn = document.getElementById("cancelBtn");
+      if (cancelBtn) cancelBtn.addEventListener("click", openCancelModal);
+    }
+
+    function renderDetail(data) {
+      const status = getDisplayStatus(data);
+      detailCard.classList.remove("hidden");
+      voucherCodeText.textContent = data.voucher_code || "-";
+      internalRefText.textContent = data.internal_no || "-";
+      recipientText.textContent = data.name || "-";
+      phoneText.textContent = data.phone || "-";
+      roomText.textContent = data.room || "-";
+      deptOutletText.textContent = `${data.department || "-"} / ${data.outlet || "-"}`;
+      createdAtText.textContent = formatDateTime(data.created_at);
+      expiryText.textContent = formatDateTime(data.expiry_date);
+      issuedByText.textContent = data.issued_by_name || data.issued_by_uid || "-";
+      setStatusBadge(status);
+      renderQr(data.voucher_code || "");
+      renderExtraInfo(data, status);
+      renderActions(data);
+    }
+
+    async function loadTimeline(voucherCode) {
+      try {
+        const q = query(collection(db, "voucher_logs"), where("voucher_code", "==", voucherCode), orderBy("action_at", "desc"));
+        const snap = await getDocs(q);
+        if (snap.empty) { timelineBody.innerHTML = "ยังไม่มีประวัติ"; return; }
+        const rows = [];
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          rows.push(`
+            <div class="timeline-item">
+              <div class="time">${formatDateTime(data.action_at)}</div>
+              <div class="action">${data.action || "-"}</div>
+              <div>${data.action_by_name || data.action_by_uid || "-"}</div>
+              <div class="note">${data.note || ""}</div>
+            </div>
+          `);
+        });
+        timelineBody.innerHTML = `<div class="timeline-list">${rows.join("")}</div>`;
+      } catch (err) {
+        timelineBody.innerHTML = `<p class="error">${err.message}</p>`;
+      }
+    }
+
+    async function loadVoucherByCode(code) {
+      const q = query(collection(db, "vouchers"), where("voucher_code", "==", code));
+      const snap = await getDocs(q);
+      if (snap.empty) return alert("ไม่พบ Voucher นี้");
+      const found = snap.docs[0];
+      currentDocId = found.id;
+      currentData = found.data();
+      renderDetail(currentData);
+      await loadTimeline(currentData.voucher_code);
+    }
+
+    async function redeemVoucher() {
+      if (!currentDocId || !currentData) return;
+      const ok = confirm(`ยืนยัน Redeem Voucher ${currentData.voucher_code}?`);
+      if (!ok) return;
+      try {
+        const ref = doc(db, "vouchers", currentDocId);
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) throw new Error("Voucher ไม่พบในระบบ");
+          const latest = snap.data();
+          const expiry = toDateObject(latest.expiry_date);
+          if (latest.status !== "issued") throw new Error("Voucher นี้ถูกใช้ไปแล้ว ถูกยกเลิกแล้ว หรือสถานะไม่ถูกต้อง");
+          if (expiry && new Date() > expiry) throw new Error("Voucher นี้หมดอายุแล้ว");
+          transaction.update(ref, {
+            status: "redeemed",
+            redeemed_at: serverTimestamp(),
+            redeemed_by_uid: user.uid,
+            redeemed_by_name: profile.name,
+            updated_at: serverTimestamp()
+          });
+        });
+
+        await addDoc(collection(db, "voucher_logs"), {
+          voucher_code: currentData.voucher_code,
+          voucher_ref: currentData.internal_no || "",
+          action: "redeemed",
+          action_at: serverTimestamp(),
+          action_by_uid: user.uid,
+          action_by_name: profile.name,
+          note: `Redeemed by ${profile.name}`
+        });
+
+        currentData.status = "redeemed";
+        currentData.redeemed_by_uid = user.uid;
+        currentData.redeemed_by_name = profile.name;
+        currentData.redeemed_at = new Date();
+        renderDetail(currentData);
+        await loadTimeline(currentData.voucher_code);
+        alert("Redeemed สำเร็จ");
+      } catch (err) {
+        alert("Redeem ไม่สำเร็จ: " + err.message);
+      }
+    }
+
+    function openCancelModal() {
+      if (!currentData) return;
+      cancelReason.value = "";
+      cancelVoucherInfo.textContent = `${currentData.voucher_code || "-"} (${currentData.internal_no || "-"})`;
+      cancelModal.classList.remove("hidden");
+    }
+    function closeCancelModal() { cancelModal.classList.add("hidden"); }
+    closeCancelBtn.addEventListener("click", closeCancelModal);
+
+    async function confirmCancelVoucher() {
+      const reason = cancelReason.value.trim();
+      if (!reason) return alert("กรุณากรอกเหตุผลในการยกเลิก");
+      try {
+        const ref = doc(db, "vouchers", currentDocId);
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) throw new Error("Voucher ไม่พบในระบบ");
+          const latest = snap.data();
+          if (latest.status !== "issued") throw new Error("ยกเลิกได้เฉพาะ voucher ที่ยังเป็น issued");
+          transaction.update(ref, {
+            status: "cancelled",
+            cancel_reason: reason,
+            cancelled_at: serverTimestamp(),
+            cancelled_by_uid: user.uid,
+            cancelled_by_name: profile.name,
+            updated_at: serverTimestamp()
+          });
+        });
+
+        await addDoc(collection(db, "voucher_logs"), {
+          voucher_code: currentData.voucher_code,
+          voucher_ref: currentData.internal_no || "",
+          action: "cancelled",
+          action_at: serverTimestamp(),
+          action_by_uid: user.uid,
+          action_by_name: profile.name,
+          note: reason
+        });
+
+        closeCancelModal();
+        currentData.status = "cancelled";
+        currentData.cancel_reason = reason;
+        currentData.cancelled_at = new Date();
+        currentData.cancelled_by_uid = user.uid;
+        currentData.cancelled_by_name = profile.name;
+        renderDetail(currentData);
+        await loadTimeline(currentData.voucher_code);
+        alert("Cancel สำเร็จ");
+      } catch (err) {
+        alert("Cancel ไม่สำเร็จ: " + err.message);
+      }
+    }
+    confirmCancelBtn.addEventListener("click", confirmCancelVoucher);
+
+    loadBtn.addEventListener("click", async () => {
+      const code = voucherInput.value.trim();
+      if (!code) return alert("กรุณาใส่ Voucher Code");
+      await loadVoucherByCode(code);
+    });
+
+    if (initialCode) {
+      voucherInput.value = initialCode;
+      await loadVoucherByCode(initialCode);
+    }
+  </script>
+</body>
+</html>
