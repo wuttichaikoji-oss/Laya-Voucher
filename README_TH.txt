@@ -63,3 +63,6 @@ Laya Voucher Full Starter Repo
 - auth-guard.js เพิ่มลิงก์ Dashboard ให้ทุก role
 - admin-users.html ล้างตัวอักษรหลุด \n ในฟอร์มแล้ว
 - firestore.rules.txt ปรับให้สอดคล้องกับ role dashboard เวอร์ชันนี้
+
+
+- UI Theme ล่าสุด: Premium Café Luxury Green (v4.7)

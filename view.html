@@ -8,14 +8,14 @@
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <style>
     :root {
-      --forest:#12392f;
-      --forest-2:#0d2b23;
-      --forest-3:#1c5143;
-      --cream:#f6f0e4;
-      --cream-2:#efe4d1;
-      --paper:#fbf7ef;
-      --gold:#c6a56c;
-      --gold-soft:#e9d5ad;
+      --forest:#006241;
+      --forest-2:#1e3932;
+      --forest-3:#14543f;
+      --cream:#f7f4ed;
+      --cream-2:#ece6d8;
+      --paper:#fffdf8;
+      --gold:#d4bf8a;
+      --gold-soft:#efe2b7;
       --ink:#213038;
       --muted:#6f7b82;
       --line:rgba(18,57,47,.14);
@@ -29,7 +29,7 @@
       background:
         radial-gradient(circle at top left, rgba(198,165,108,.16), transparent 30%),
         radial-gradient(circle at bottom right, rgba(18,57,47,.20), transparent 34%),
-        linear-gradient(180deg, #e8eceb 0%, #e0e5e4 100%);
+        linear-gradient(180deg, #eef2ef 0%, #e6ebe7 100%);
     }
     .voucher-view-shell {
       max-width: 980px;
@@ -153,7 +153,7 @@
     .coupon-back {
       display:grid;
       grid-template-columns: 1.28fr .72fr;
-      background:linear-gradient(135deg, #f8f4eb 0%, #efe4d3 100%);
+      background:linear-gradient(135deg, #fbf8f1 0%, #efe9dc 100%);
     }
     .panel-main,
     .panel-side {
@@ -182,7 +182,7 @@
         radial-gradient(circle at top right, rgba(255,255,255,.12), transparent 28%),
         radial-gradient(circle at bottom left, rgba(255,255,255,.08), transparent 24%),
         repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0 14px, rgba(255,255,255,.01) 14px 28px),
-        linear-gradient(165deg, #12392f 0%, #0c2922 100%);
+        linear-gradient(165deg, #006241 0%, #1e3932 100%);
     }
     .panel-side::before {
       content:"";
@@ -662,6 +662,100 @@
       @page { size:A4 portrait; margin:10mm; }
     }
   </style>
+
+  <style id="luxury-voucher-overrides">
+    body.voucher-slider-page {
+      background:
+        radial-gradient(circle at top left, rgba(199,166,106,.16), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(16,53,45,.22), transparent 24%),
+        linear-gradient(180deg, #f4efe6 0%, #e7dfd1 100%);
+    }
+    body.voucher-slider-page::before {
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:repeating-linear-gradient(135deg, rgba(103,86,57,.018) 0 1px, transparent 1px 18px);
+      opacity:.4;
+    }
+    .viewer-title, .hero-title, .back-title {
+      font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    }
+    .viewer-toolbar button, .viewer-toolbar a {
+      border-radius:16px;
+      border:1px solid rgba(199,166,106,.18);
+      box-shadow:0 14px 28px rgba(16,26,22,.08), inset 0 1px 0 rgba(255,255,255,.55);
+    }
+    .viewer-toolbar .primary {
+      background:linear-gradient(135deg, #1c473b, #102925);
+      border-color:rgba(199,166,106,.28);
+    }
+    .coupon-card {
+      width:min(100%, 640px);
+      min-height:356px;
+      border-radius:30px;
+      border:1px solid rgba(199,166,106,.26);
+      box-shadow:0 28px 70px rgba(14, 28, 24, 0.22);
+    }
+    .coupon-card::after {
+      background:
+        linear-gradient(115deg, rgba(255,255,255,.26), transparent 22%, transparent 78%, rgba(255,255,255,.14)),
+        repeating-linear-gradient(135deg, rgba(125,106,71,.012) 0 1px, transparent 1px 15px);
+    }
+    .panel-main {
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.80), rgba(255,255,255,.42)),
+        repeating-linear-gradient(0deg, rgba(110,95,70,.015), rgba(110,95,70,.015) 2px, transparent 2px, transparent 9px),
+        linear-gradient(135deg, #fffdfa, #f3ecde);
+    }
+    .panel-main::before,
+    .panel-side::before {
+      border-color: rgba(199,166,106,.34);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .panel-side {
+      background:
+        radial-gradient(circle at top right, rgba(255,255,255,.12), transparent 26%),
+        radial-gradient(circle at bottom left, rgba(255,255,255,.08), transparent 24%),
+        linear-gradient(165deg, #16352e 0%, #0d231f 100%);
+      border-left:1px dashed rgba(199,166,106,.40);
+    }
+    .collection-label, .back-label, .detail-label { color:#8a6b3b; }
+    .hero-title { color:#19262b; }
+    .seal-badge {
+      background: radial-gradient(circle, rgba(255,255,255,.92) 0%, rgba(247,236,213,.90) 62%, rgba(219,194,144,.96) 100%);
+      border:1px solid rgba(199,166,106,.62);
+      box-shadow:0 12px 28px rgba(122,90,38,.18), inset 0 0 0 10px rgba(255,255,255,.28);
+      color:#7b5e2f;
+    }
+    .brand-medallion {
+      width:124px;
+      height:124px;
+      background:linear-gradient(145deg, rgba(255,255,255,.99), rgba(245,233,204,.94));
+      border:1px solid rgba(233,213,173,.72);
+      box-shadow:0 16px 26px rgba(0,0,0,.18), inset 0 0 0 10px rgba(24,80,65,.08);
+    }
+    .qr-box, .auth-card, .summary-card {
+      border:1px solid rgba(233,213,173,.26);
+      box-shadow:0 14px 24px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .terms-card {
+      background:linear-gradient(180deg, rgba(255,255,255,.76), rgba(255,251,244,.62));
+      border:1px solid rgba(199,166,106,.16);
+    }
+    .back-side-stamp {
+      border:1px dashed rgba(233,213,173,.34);
+      color:#f2dfba;
+      background:rgba(255,255,255,.05);
+    }
+    @media print {
+      .coupon-card {
+        width: 158mm;
+        min-height: 89mm;
+      }
+    }
+  </style>
+
 </head>
 <body class="voucher-slider-page">
   <div class="voucher-view-shell">

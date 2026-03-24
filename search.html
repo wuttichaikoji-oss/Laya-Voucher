@@ -28,13 +28,25 @@
         </div>
       </div>
     </div>
+    <div id="deleteModal" class="modal hidden">
+      <div class="modal-card">
+        <h3>Delete Voucher</h3>
+        <p id="deleteVoucherInfo"></p>
+        <input id="deleteConfirmInput" type="text" placeholder="พิมพ์ Voucher Code เพื่อยืนยันการลบ" />
+        <p class="modal-note">การลบเป็นแบบถาวร และจะลบ timeline ของ Voucher นี้ด้วย</p>
+        <div class="modal-actions">
+          <button id="confirmDeleteBtn" type="button" class="danger-btn">Delete Permanently</button>
+          <button id="closeDeleteBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
     <div class="nav no-print" id="navMenu"></div>
   </div>
 
   <script type="module">
     import { db } from "./firebase-config.js";
     import { requireRole, renderNav } from "./auth-guard.js";
-    import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
     const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
     renderNav(profile);
@@ -47,6 +59,11 @@
     const cancelVoucherInfo = document.getElementById("cancelVoucherInfo");
     const confirmCancelBtn = document.getElementById("confirmCancelBtn");
     const closeCancelBtn = document.getElementById("closeCancelBtn");
+    const deleteModal = document.getElementById("deleteModal");
+    const deleteVoucherInfo = document.getElementById("deleteVoucherInfo");
+    const deleteConfirmInput = document.getElementById("deleteConfirmInput");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    const closeDeleteBtn = document.getElementById("closeDeleteBtn");
 
     let currentDocId = null;
     let currentData = null;
@@ -67,6 +84,15 @@
     }
     function closeCancelPrompt() { cancelModal.classList.add("hidden"); }
     closeCancelBtn.addEventListener("click", closeCancelPrompt);
+
+    function openDeletePrompt() {
+      if (!currentData || profile.role !== "admin") return;
+      deleteConfirmInput.value = "";
+      deleteVoucherInfo.textContent = `พิมพ์ ${currentData.voucher_code || "-"} เพื่อยืนยันการลบ Voucher แบบถาวร`;
+      deleteModal.classList.remove("hidden");
+    }
+    function closeDeletePrompt() { deleteModal.classList.add("hidden"); }
+    closeDeleteBtn.addEventListener("click", closeDeletePrompt);
 
     async function confirmCancelVoucher() {
       const reason = cancelReasonEl.value.trim();
@@ -116,6 +142,33 @@
     }
     confirmCancelBtn.addEventListener("click", confirmCancelVoucher);
 
+    async function confirmDeleteVoucher() {
+      if (!currentDocId || !currentData || profile.role !== "admin") return;
+      const expected = (currentData.voucher_code || "").trim();
+      const typed = deleteConfirmInput.value.trim();
+      if (!expected) return alert("ไม่พบ Voucher Code");
+      if (typed !== expected) return alert("กรอก Voucher Code ให้ตรงก่อนลบ");
+
+      try {
+        const logsQ = query(collection(db, "voucher_logs"), where("voucher_code", "==", expected));
+        const logsSnap = await getDocs(logsQ);
+        await Promise.all(logsSnap.docs.map((d) => deleteDoc(doc(db, "voucher_logs", d.id))));
+        await deleteDoc(doc(db, "vouchers", currentDocId));
+
+        closeDeletePrompt();
+        result.innerHTML = `
+          <h2>${expected}</h2>
+          <p class="success">ลบ Voucher สำเร็จแล้ว</p>
+          <p class="ref">ข้อมูลและ timeline ของ Voucher นี้ถูกลบออกจากระบบแล้ว</p>
+        `;
+        currentDocId = null;
+        currentData = null;
+      } catch (err) {
+        alert("Delete ไม่สำเร็จ: " + err.message);
+      }
+    }
+    confirmDeleteBtn.addEventListener("click", confirmDeleteVoucher);
+
     searchBtn.addEventListener("click", async () => {
       const voucherCode = searchInput.value.trim();
       if (!voucherCode) return alert("กรุณาใส่ Voucher Code");
@@ -153,10 +206,18 @@
         `;
 
         const actionArea = document.getElementById("actionArea");
+        const buttons = [];
         if (["supervisor", "manager", "admin"].includes(profile.role) && data.status === "issued") {
-          actionArea.innerHTML = `<button id="cancelBtn" type="button">Cancel Voucher</button>`;
-          document.getElementById("cancelBtn").addEventListener("click", openCancelPrompt);
+          buttons.push(`<button id="cancelBtn" type="button">Cancel Voucher</button>`);
         }
+        if (profile.role === "admin") {
+          buttons.push(`<button id="deleteBtn" type="button" class="danger-btn">Delete Voucher</button>`);
+        }
+        actionArea.innerHTML = buttons.join("");
+        const cancelBtn = document.getElementById("cancelBtn");
+        if (cancelBtn) cancelBtn.addEventListener("click", openCancelPrompt);
+        const deleteBtn = document.getElementById("deleteBtn");
+        if (deleteBtn) deleteBtn.addEventListener("click", openDeletePrompt);
       } catch (err) {
         result.innerHTML = `<p class="error">เกิดข้อผิดพลาด: ${err.message}</p>`;
       }
