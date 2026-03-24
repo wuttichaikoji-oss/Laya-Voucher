@@ -184,13 +184,8 @@
           if (exp && exp < new Date()) throw new Error("Token นี้หมดอายุแล้ว");
 
           const voucherRef = doc(db, "vouchers", claim.voucher_id);
-          const voucherSnap = await transaction.get(voucherRef);
-          if (!voucherSnap.exists()) throw new Error("Voucher ไม่พบในระบบ");
-          const voucher = voucherSnap.data();
-          if ((voucher.active_claim_token || "") !== token) throw new Error("Voucher นี้ไม่ได้ผูกกับ QR นี้แล้ว");
-          if (voucher.status !== "issued") throw new Error("Voucher นี้ไม่พร้อมใช้งานแล้ว");
-
           const nowTs = Timestamp.now();
+
           transaction.update(claimRef, {
             status: "used",
             used_at: nowTs
@@ -206,7 +201,12 @@
 
         renderVoucher(finalData, "Voucher ของคุณพร้อมแล้ว แสดงหน้านี้ให้พนักงานเพื่อใช้สิทธิ์ได้เลย", "success");
       } catch (err) {
-        setStatus("error", err.message || "เปิด Voucher ไม่สำเร็จ");
+        const msg = err && err.message ? err.message : "เปิด Voucher ไม่สำเร็จ";
+        if ((msg || "").toLowerCase().includes("permission")) {
+          setStatus("error", "เปิด Voucher ไม่สำเร็จ: สิทธิ์ไม่พอจาก rules รุ่นเก่า กรุณาอัปเดตไฟล์เว็บและ Firestore Rules เวอร์ชันล่าสุด");
+        } else {
+          setStatus("error", msg);
+        }
       }
     }
 
