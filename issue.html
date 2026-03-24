@@ -35,6 +35,7 @@
     .status-box.success { background: var(--success-bg); color: var(--success-text); }
     .status-box.error { background: var(--danger-bg); color: var(--danger-text); }
     .status-box h3 { margin:0 0 6px; }
+    .code-list{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.code-pill{padding:10px 12px;border-radius:14px;background:#f5f7f6;border:1px solid rgba(30,57,50,.12);font-weight:700;letter-spacing:.04em}.status-meta{display:grid;gap:6px;margin-top:10px;color:#52626c}.status-meta strong{color:#173429}
     @media (max-width: 980px) {
       .issue-grid, .voucher-mini { grid-template-columns: 1fr; }
       .issue-form-grid { grid-template-columns: 1fr; }
@@ -77,6 +78,15 @@
               <option value="unlimited">จนกว่าจะใช้</option>
             </select>
             <p class="ref" id="validityHint">สิทธิ์เลือกอายุ Voucher เปิดให้ admin</p>
+          </div>
+          <div id="batchWrap" class="full hidden">
+            <label class="label" for="batchQty">จำนวน Voucher ที่จะสร้าง</label>
+            <select id="batchQty">
+              <option value="1" selected>1 code</option>
+              <option value="10">10 codes</option>
+              <option value="20">20 codes</option>
+            </select>
+            <p class="ref" id="batchHint">Admin สามารถสร้าง Voucher แบบชุดได้ครั้งละ 10 หรือ 20 code</p>
           </div>
         </div>
 
@@ -143,7 +153,7 @@
     import { db } from "./firebase-config.js";
     import { requireRole, renderNav } from "./auth-guard.js";
     import {
-      collection, addDoc, serverTimestamp, query, where, getDocs, doc, runTransaction
+      collection, serverTimestamp, query, where, getDocs, doc, runTransaction, writeBatch
     } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
     const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
@@ -158,6 +168,9 @@
     const validityWrap = document.getElementById("validityWrap");
     const validityEl = document.getElementById("validity");
     const validityHint = document.getElementById("validityHint");
+    const batchWrap = document.getElementById("batchWrap");
+    const batchQtyEl = document.getElementById("batchQty");
+    const batchHint = document.getElementById("batchHint");
     const qrBox = document.getElementById("qrcode");
 
     const fixedOutlet = "Aroonsawat";
@@ -168,9 +181,15 @@
       validityEl.value = "30";
       validityEl.disabled = true;
       validityHint.textContent = `Role ${profile.role} จะใช้อายุ Voucher มาตรฐาน 30 วัน`;
+      batchWrap.classList.add("hidden");
     } else {
       validityHint.textContent = "Admin สามารถเลือกอายุ Voucher เป็น 7 วัน, 15 วัน, 30 วัน หรือจนกว่าจะใช้";
+      batchWrap.classList.remove("hidden");
+      batchHint.textContent = "Admin สามารถสร้าง Voucher ได้ครั้งละ 1, 10 หรือ 20 code";
     }
+
+    syncActionButtons();
+    if (batchQtyEl) batchQtyEl.addEventListener("change", syncActionButtons);
 
     if (profile.role !== "admin" && !(profile.department || "").trim()) {
       generateBtn.disabled = true;
@@ -195,25 +214,32 @@
       return { year: String(now.getFullYear()), month: String(now.getMonth() + 1).padStart(2, "0") };
     }
 
-    async function generateVoucherSerial(department) {
+    async function generateVoucherSerialBatch(department, quantity = 1) {
       const ym = getYearMonth();
       const key = `${department}_${ym}`;
       const ref = doc(db, "running_numbers", key);
-      let newNumber = 1;
+      let startNumber = 1;
+      let endNumber = 1;
       await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(ref);
+        const current = snap.exists() ? (snap.data().current_number || 0) : 0;
+        startNumber = current + 1;
+        endNumber = current + quantity;
         if (!snap.exists()) {
-          transaction.set(ref, { department, year_month: ym, current_number: 1 });
-          newNumber = 1;
+          transaction.set(ref, { department, year_month: ym, current_number: endNumber });
         } else {
-          newNumber = (snap.data().current_number || 0) + 1;
-          transaction.update(ref, { current_number: newNumber });
+          transaction.update(ref, { current_number: endNumber });
         }
       });
-      return {
-        sequence: newNumber,
-        internalNo: `${department}-${ym}-${String(newNumber).padStart(4, "0")}`
-      };
+      const serials = [];
+      for (let n = startNumber; n <= endNumber; n++) {
+        serials.push({
+          sequence: n,
+          internalNo: `${department}-${ym}-${String(n).padStart(4, "0")}`,
+          displayNo: buildDisplayNo(n)
+        });
+      }
+      return serials;
     }
 
     function buildDisplayNo(sequence) {
@@ -238,6 +264,30 @@
       }
       return code;
     }
+    async function generateUniqueVoucherCodes(quantity = 1) {
+      const unique = [];
+      const seen = new Set();
+      while (unique.length < quantity) {
+        const code = await generateUniqueVoucherCode();
+        if (seen.has(code)) continue;
+        seen.add(code);
+        unique.push(code);
+      }
+      return unique;
+    }
+
+    function getBatchQuantity() {
+      if (profile.role !== "admin") return 1;
+      const qty = parseInt(batchQtyEl.value || "1", 10);
+      return [1, 10, 20].includes(qty) ? qty : 1;
+    }
+
+    function syncActionButtons() {
+      const qty = getBatchQuantity();
+      generateBtn.textContent = qty > 1 ? `Prepare ${qty} Codes` : "Generate QR & Code";
+      createBtn.textContent = qty > 1 ? `Create ${qty} Vouchers` : "Create Voucher";
+    }
+
 
     function getValidityMeta() {
       const value = profile.role === "admin" ? validityEl.value : "30";
@@ -254,17 +304,47 @@
 
     function fillPreview(data) {
       previewSection.classList.remove("hidden");
-      document.getElementById("miniDisplayNo").textContent = `NO. ${data.displayNo}`;
-      document.getElementById("miniVoucherCode").textContent = `CODE ${data.voucherCode}`;
+      const sample = data.vouchers[0];
+      const qty = data.quantity || 1;
+      document.getElementById("miniDisplayNo").textContent = qty > 1 ? `BATCH x${qty}` : `NO. ${sample.displayNo}`;
+      document.getElementById("miniVoucherCode").textContent = qty > 1 ? `FIRST ${sample.voucherCode}` : `CODE ${sample.voucherCode}`;
       document.getElementById("miniGuest").textContent = data.name || "-";
       document.getElementById("miniRoom").textContent = data.room || "-";
       document.getElementById("miniReason").textContent = data.reason || "-";
       document.getElementById("miniValidity").textContent = data.validityLabel || "30 วัน";
-      renderQr(data.voucherCode);
+      renderQr(sample.voucherCode);
       createBtn.disabled = false;
     }
 
     function renderResultSuccess(saved) {
+      if (Array.isArray(saved)) {
+        const count = saved.length;
+        const first = saved[0];
+        const last = saved[saved.length - 1];
+        const items = saved.slice(0, 20).map(v => `<div class="code-pill">${v.voucher_code}</div>`).join("");
+        result.className = "card section-card status-box success";
+        result.innerHTML = `
+          <h3>Voucher batch created successfully</h3>
+          <p><strong>Created:</strong> ${count} vouchers</p>
+          <p><strong>Display range:</strong> ${first.display_no} - ${last.display_no}</p>
+          <p><strong>Outlet:</strong> ${first.outlet}</p>
+          <div class="status-meta">
+            <span>ระบบสร้าง code ชุดนี้สำเร็จแล้ว คุณสามารถค้นหาจากหน้า Search หรือเปิดหน้ารวม Voucher ได้ทันที</span>
+          </div>
+          <div class="code-list">${items}</div>
+          <div class="button-row" style="margin-top:12px;">
+            <button type="button" id="openSearchBtn" class="button-secondary">Open Search</button>
+            <button type="button" id="openFirstViewBtn" class="button-ghost">Open First Voucher</button>
+          </div>
+        `;
+        document.getElementById("openSearchBtn").addEventListener("click", () => {
+          window.open("search.html", "_blank");
+        });
+        document.getElementById("openFirstViewBtn").addEventListener("click", () => {
+          window.open(`view.html?code=${encodeURIComponent(first.voucher_code)}`, "_blank");
+        });
+        return;
+      }
       result.className = "card section-card status-box success";
       result.innerHTML = `
         <h3>Voucher created successfully</h3>
@@ -296,13 +376,12 @@
         const name = document.getElementById("name").value.trim();
         const room = document.getElementById("room").value.trim();
         const reason = document.getElementById("reason").value.trim();
-        const serial = await generateVoucherSerial(effectiveDepartment);
-        const voucherCode = await generateUniqueVoucherCode();
+        const quantity = getBatchQuantity();
+        const serials = await generateVoucherSerialBatch(effectiveDepartment, quantity);
+        const codes = await generateUniqueVoucherCodes(quantity);
         const validity = getValidityMeta();
         pendingVoucher = {
-          internalNo: serial.internalNo,
-          displayNo: buildDisplayNo(serial.sequence),
-          voucherCode,
+          quantity,
           name,
           room,
           reason,
@@ -311,74 +390,88 @@
           validityMode: validity.mode,
           validityLabel: validity.label,
           expiryDate: validity.expiryDate,
-          validityDays: validity.days
+          validityDays: validity.days,
+          vouchers: serials.map((serial, index) => ({
+            internalNo: serial.internalNo,
+            displayNo: serial.displayNo,
+            voucherCode: codes[index]
+          }))
         };
         fillPreview(pendingVoucher);
         result.className = "hidden";
         result.innerHTML = "";
       } catch (err) {
-        renderResultError(`Generate QR & Code ไม่สำเร็จ: ${err.message}`);
+        renderResultError(`เตรียม code ไม่สำเร็จ: ${err.message}`);
       } finally {
         generateBtn.disabled = false;
       }
     });
 
     createBtn.addEventListener("click", async () => {
-      if (!pendingVoucher) return alert("กรุณา Generate QR & Code ก่อน");
+      if (!pendingVoucher) return alert("กรุณา Prepare code ก่อน");
       createBtn.disabled = true;
       try {
-        const payload = {
-          internal_no: pendingVoucher.internalNo,
-          display_no: pendingVoucher.displayNo,
-          voucher_code: pendingVoucher.voucherCode,
-          name: pendingVoucher.name || "",
-          phone: "",
-          room: pendingVoucher.room || "",
-          reason: pendingVoucher.reason || "",
-          department: pendingVoucher.department,
-          outlet: pendingVoucher.outlet,
-          template_type: "starbucks_drink",
-          voucher_title_small: "COMPLIMENTARY",
-          voucher_title_big: "1 DRINK",
-          voucher_description: "Show this voucher at AROONSAWAT to receive 1 complimentary drink (Hot Coffee, Iced Coffee, or Soft Drink)",
-          validity_mode: pendingVoucher.validityMode,
-          validity_label: pendingVoucher.validityLabel,
-          validity_days: pendingVoucher.validityDays,
-          status: "issued",
-          handoff_status: "ready",
-          distributed_via: "",
-          distributed_at: null,
-          active_claim_token: "",
-          active_claim_expires_at: null,
-          issued_by_uid: user.uid,
-          issued_by_name: profile.name,
-          issued_by_role: profile.role,
-          created_at: serverTimestamp(),
-          updated_at: serverTimestamp(),
-          expiry_date: pendingVoucher.expiryDate,
-          policy_version: "v1"
-        };
+        const batch = writeBatch(db);
+        const createdPayloads = [];
+        for (const item of pendingVoucher.vouchers) {
+          const payload = {
+            internal_no: item.internalNo,
+            display_no: item.displayNo,
+            voucher_code: item.voucherCode,
+            name: pendingVoucher.name || "",
+            phone: "",
+            room: pendingVoucher.room || "",
+            reason: pendingVoucher.reason || "",
+            department: pendingVoucher.department,
+            outlet: pendingVoucher.outlet,
+            template_type: "starbucks_drink",
+            voucher_title_small: "COMPLIMENTARY",
+            voucher_title_big: "1 DRINK",
+            voucher_description: "Show this voucher at AROONSAWAT to receive 1 complimentary drink (Hot Coffee, Iced Coffee, or Soft Drink)",
+            validity_mode: pendingVoucher.validityMode,
+            validity_label: pendingVoucher.validityLabel,
+            validity_days: pendingVoucher.validityDays,
+            status: "issued",
+            handoff_status: "ready",
+            distributed_via: "",
+            distributed_at: null,
+            active_claim_token: "",
+            active_claim_expires_at: null,
+            issued_by_uid: user.uid,
+            issued_by_name: profile.name,
+            issued_by_role: profile.role,
+            created_at: serverTimestamp(),
+            updated_at: serverTimestamp(),
+            expiry_date: pendingVoucher.expiryDate,
+            policy_version: "v1"
+          };
+          const voucherRef = doc(collection(db, "vouchers"));
+          batch.set(voucherRef, payload);
+          const logRef = doc(collection(db, "voucher_logs"));
+          batch.set(logRef, {
+            voucher_code: item.voucherCode,
+            voucher_ref: item.internalNo,
+            department: pendingVoucher.department,
+            outlet: pendingVoucher.outlet,
+            action: "issued",
+            action_at: serverTimestamp(),
+            action_by_uid: user.uid,
+            action_by_name: profile.name,
+            action_by_role: profile.role,
+            note: `Voucher issued${pendingVoucher.reason ? ` / ${pendingVoucher.reason}` : ""}`
+          });
+          createdPayloads.push(payload);
+        }
 
-        await addDoc(collection(db, "vouchers"), payload);
-
-        await addDoc(collection(db, "voucher_logs"), {
-          voucher_code: pendingVoucher.voucherCode,
-          voucher_ref: pendingVoucher.internalNo,
-          department: pendingVoucher.department,
-          outlet: pendingVoucher.outlet,
-          action: "issued",
-          action_at: serverTimestamp(),
-          action_by_uid: user.uid,
-          action_by_name: profile.name,
-          action_by_role: profile.role,
-          note: `Voucher issued${pendingVoucher.reason ? ` / ${pendingVoucher.reason}` : ""}`
-        });
-
-        renderResultSuccess(payload);
+        await batch.commit();
+        renderResultSuccess(pendingVoucher.quantity > 1 ? createdPayloads : createdPayloads[0]);
+        pendingVoucher = null;
+        createBtn.disabled = true;
       } catch (err) {
         renderResultError(`สร้าง Voucher ไม่สำเร็จ: ${err.message}`);
       } finally {
-        createBtn.disabled = false;
+        createBtn.disabled = !pendingVoucher;
+        syncActionButtons();
       }
     });
 
