@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guest Voucher Pickup</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <style>
+    body { background: linear-gradient(180deg, #f8f6f0 0%, #f0ece3 100%); }
+    .guest-wrap { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:22px; }
+    .guest-shell { width:min(100%, 940px); display:grid; grid-template-columns: minmax(0,1.05fr) minmax(320px,.95fr); gap:20px; }
+    .guest-card { background: rgba(255,255,255,.96); border:1px solid rgba(30,57,50,.10); border-radius:30px; box-shadow: 0 18px 50px rgba(15,35,28,.12); overflow:hidden; }
+    .guest-left { padding:28px; background: linear-gradient(155deg, #1e3932 0%, #14543f 45%, #006241 140%); color:#fff; position:relative; }
+    .guest-left::before { content:""; position:absolute; inset:auto -60px -90px auto; width:240px; height:240px; border-radius:50%; background: radial-gradient(circle, rgba(255,255,255,.16), transparent 62%); }
+    .guest-right { padding:28px; display:flex; flex-direction:column; justify-content:center; }
+    .guest-logo { height:58px; object-fit:contain; margin-bottom:18px; }
+    .guest-title-small { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.76); }
+    .guest-title-big { font-size: clamp(36px, 8vw, 62px); line-height:.92; letter-spacing:-.04em; font-weight:900; margin:8px 0 14px; }
+    .guest-desc { color:rgba(255,255,255,.86); max-width: 400px; }
+    .guest-chip-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .guest-chip { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.12); color:#fff; font-size:12px; font-weight:700; }
+    .guest-code { font-size: clamp(24px, 5vw, 34px); letter-spacing:.14em; font-weight:900; color: var(--primary-2); margin:6px 0 8px; }
+    .guest-right h2 { margin:0; font-size:28px; color: var(--primary-2); }
+    .guest-right p { color:var(--muted); }
+    .guest-qr { display:flex; align-items:center; justify-content:center; padding:14px 0 6px; }
+    .guest-qr img { background:#fff; padding:14px; border-radius:22px; box-shadow: 0 12px 22px rgba(15,35,28,.10); }
+    .guest-meta { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; margin-top:16px; }
+    .guest-meta-card { background:#faf8f2; border:1px solid rgba(30,57,50,.10); border-radius:18px; padding:14px; }
+    .guest-meta-card .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .guest-meta-card strong { display:block; margin-top:6px; color: var(--primary-2); font-size:18px; }
+    .guest-status { border-radius:18px; padding:16px 18px; margin-bottom:16px; }
+    .guest-status.success { background: var(--success-bg); color: var(--success-text); }
+    .guest-status.error { background: var(--danger-bg); color: var(--danger-text); }
+    .guest-status.info { background: rgba(0,98,65,.08); color: var(--primary-2); }
+    .guest-tips { margin-top:14px; padding-top:14px; border-top:1px dashed rgba(30,57,50,.18); color:var(--muted); font-size:14px; }
+    @media (max-width: 860px) {
+      .guest-shell { grid-template-columns: 1fr; }
+      .guest-meta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="guest-wrap">
+    <div class="guest-shell">
+      <div class="guest-card guest-left">
+        <img class="guest-logo" src="assets/front_logo_crop.png" alt="Logo" />
+        <div class="guest-title-small" id="titleSmall">COMPLIMENTARY</div>
+        <div class="guest-title-big" id="titleBig">1 DRINK</div>
+        <p class="guest-desc" id="descriptionText">Show this voucher to receive 1 complimentary drink.</p>
+        <div class="guest-chip-row">
+          <span class="guest-chip">Guest Pickup</span>
+          <span class="guest-chip" id="outletChip">Aroonsawat</span>
+        </div>
+      </div>
+
+      <div class="guest-card guest-right">
+        <div id="statusBox" class="guest-status info">
+          Loading your voucher...
+        </div>
+        <h2>Your Voucher</h2>
+        <p>แสดง QR หรือ Code นี้ให้พนักงานเพื่อใช้สิทธิ์ของคุณ</p>
+        <div class="guest-code" id="voucherCodeText">-</div>
+        <div class="guest-qr" id="voucherQr"></div>
+        <div class="guest-meta">
+          <div class="guest-meta-card">
+            <div class="label">Validity</div>
+            <strong id="validityText">-</strong>
+          </div>
+          <div class="guest-meta-card">
+            <div class="label">Ref</div>
+            <strong id="refText">-</strong>
+          </div>
+          <div class="guest-meta-card">
+            <div class="label">Recipient</div>
+            <strong id="recipientText">-</strong>
+          </div>
+          <div class="guest-meta-card">
+            <div class="label">Reason</div>
+            <strong id="reasonText">-</strong>
+          </div>
+        </div>
+        <div class="guest-tips">
+          แนะนำให้เก็บภาพหน้าจอนี้ไว้ หากปิดหน้านี้ไปแล้วลิงก์รับ Voucher อาจไม่สามารถใช้งานซ้ำได้
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { doc, getDoc, runTransaction, Timestamp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    const statusBox = document.getElementById("statusBox");
+    const titleSmall = document.getElementById("titleSmall");
+    const titleBig = document.getElementById("titleBig");
+    const descriptionText = document.getElementById("descriptionText");
+    const outletChip = document.getElementById("outletChip");
+    const voucherCodeText = document.getElementById("voucherCodeText");
+    const voucherQr = document.getElementById("voucherQr");
+    const validityText = document.getElementById("validityText");
+    const refText = document.getElementById("refText");
+    const recipientText = document.getElementById("recipientText");
+    const reasonText = document.getElementById("reasonText");
+
+    function setStatus(type, text) {
+      statusBox.className = `guest-status ${type}`;
+      statusBox.textContent = text;
+    }
+
+    function tsToDate(value) {
+      if (!value) return null;
+      try { return value.toDate ? value.toDate() : new Date(value); }
+      catch { return null; }
+    }
+
+    function renderVoucher(data, statusMessage, type = "success") {
+      setStatus(type, statusMessage);
+      titleSmall.textContent = data.voucher_title_small || "COMPLIMENTARY";
+      titleBig.textContent = data.voucher_title_big || "1 DRINK";
+      descriptionText.textContent = data.voucher_description || "Show this voucher to receive 1 complimentary drink.";
+      outletChip.textContent = data.outlet || "Aroonsawat";
+      voucherCodeText.textContent = data.voucher_code || "-";
+      validityText.textContent = data.validity_label || data.expiry_text || "-";
+      refText.textContent = data.internal_no || "-";
+      recipientText.textContent = data.name || "Walk-in Guest";
+      reasonText.textContent = data.reason || "-";
+      voucherQr.innerHTML = "";
+      if (data.voucher_code) {
+        new QRCode(voucherQr, {
+          text: data.voucher_code,
+          width: 190,
+          height: 190,
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }
+    }
+
+    async function openToken() {
+      if (!token) {
+        setStatus("error", "ลิงก์นี้ไม่สมบูรณ์ กรุณาให้พนักงานสร้าง QR ใหม่");
+        return;
+      }
+
+      const claimRef = doc(db, "voucher_claim_tokens", token);
+      const claimSnap = await getDoc(claimRef);
+      if (!claimSnap.exists()) {
+        setStatus("error", "ไม่พบลิงก์รับ Voucher นี้ในระบบ");
+        return;
+      }
+
+      const existing = claimSnap.data();
+      const expiresAt = tsToDate(existing.expires_at);
+      const now = new Date();
+
+      if (existing.status === "used") {
+        renderVoucher(existing, "Voucher นี้ถูกเปิดรับแล้ว แสดง QR หรือ Code นี้ให้พนักงานได้เลย", "success");
+        return;
+      }
+      if (existing.status === "cancelled") {
+        setStatus("error", "ลิงก์นี้ถูกยกเลิกแล้ว กรุณาติดต่อพนักงานอีกครั้ง");
+        return;
+      }
+      if (expiresAt && expiresAt < now) {
+        setStatus("error", "ลิงก์นี้หมดอายุแล้ว กรุณาติดต่อพนักงานให้สร้าง QR ใหม่");
+        return;
+      }
+
+      try {
+        let finalData = existing;
+        await runTransaction(db, async (transaction) => {
+          const latestClaim = await transaction.get(claimRef);
+          if (!latestClaim.exists()) throw new Error("Token หายไปจากระบบ");
+          const claim = latestClaim.data();
+          const exp = tsToDate(claim.expires_at);
+          if (claim.status === "used") {
+            finalData = claim;
+            return;
+          }
+          if (claim.status !== "active") throw new Error("Token นี้ไม่พร้อมใช้งานแล้ว");
+          if (exp && exp < new Date()) throw new Error("Token นี้หมดอายุแล้ว");
+
+          const voucherRef = doc(db, "vouchers", claim.voucher_id);
+          const voucherSnap = await transaction.get(voucherRef);
+          if (!voucherSnap.exists()) throw new Error("Voucher ไม่พบในระบบ");
+          const voucher = voucherSnap.data();
+          if ((voucher.active_claim_token || "") !== token) throw new Error("Voucher นี้ไม่ได้ผูกกับ QR นี้แล้ว");
+          if (voucher.status !== "issued") throw new Error("Voucher นี้ไม่พร้อมใช้งานแล้ว");
+
+          const nowTs = Timestamp.now();
+          transaction.update(claimRef, {
+            status: "used",
+            used_at: nowTs
+          });
+          transaction.update(voucherRef, {
+            handoff_status: "delivered",
+            distributed_via: "guest_qr",
+            distributed_at: nowTs,
+            updated_at: nowTs
+          });
+          finalData = { ...claim, status: "used", used_at: nowTs };
+        });
+
+        renderVoucher(finalData, "Voucher ของคุณพร้อมแล้ว แสดงหน้านี้ให้พนักงานเพื่อใช้สิทธิ์ได้เลย", "success");
+      } catch (err) {
+        setStatus("error", err.message || "เปิด Voucher ไม่สำเร็จ");
+      }
+    }
+
+    openToken();
+  </script>
+</body>
+</html>

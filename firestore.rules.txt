@@ -76,6 +76,25 @@ service cloud.firestore {
         && request.resource.data.created_at == resource.data.created_at;
     }
 
+    function voucherGuestDeliveryChangeOnly() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+        "handoff_status",
+        "distributed_via",
+        "distributed_at",
+        "updated_at"
+      ]);
+    }
+
+    function claimTokenExists(tokenId) {
+      return tokenId is string
+        && tokenId != ""
+        && exists(/databases/$(database)/documents/voucher_claim_tokens/$(tokenId));
+    }
+
+    function claimTokenData(tokenId) {
+      return get(/databases/$(database)/documents/voucher_claim_tokens/$(tokenId)).data;
+    }
+
     match /employee_login_index/{employeeId} {
       allow read: if true;
       allow create: if signedIn()
@@ -144,6 +163,19 @@ service cloud.firestore {
             || staffOutletLocked()
             || sameOutlet(resource.data)
           )
+        )
+        || (
+          claimTokenExists(resource.data.active_claim_token)
+          && claimTokenData(resource.data.active_claim_token).status == "active"
+          && claimTokenData(resource.data.active_claim_token).voucher_id == docId
+          && coreVoucherFieldsUnchanged()
+          && resource.data.status == "issued"
+          && request.resource.data.status == "issued"
+          && resource.data.handoff_status == "reserved"
+          && request.resource.data.handoff_status == "delivered"
+          && request.resource.data.distributed_via == "guest_qr"
+          && request.resource.data.active_claim_token == resource.data.active_claim_token
+          && voucherGuestDeliveryChangeOnly()
         );
 
       allow delete: if isAdmin();
@@ -160,6 +192,31 @@ service cloud.firestore {
         )
         && request.resource.data.action_by_uid == request.auth.uid;
       allow update, delete: if isAdmin();
+    }
+
+    match /voucher_claim_tokens/{tokenId} {
+      allow get: if true;
+      allow list: if isSupervisorOrAbove();
+
+      allow create: if isSupervisorOrAbove()
+        && request.resource.data.token == tokenId
+        && request.resource.data.created_by_uid == request.auth.uid
+        && request.resource.data.status == "active";
+
+      allow update: if (
+          isSupervisorOrAbove()
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["status", "cancelled_at"])
+          && resource.data.status == "active"
+          && request.resource.data.status == "cancelled"
+        )
+        || (
+          resource.data.status == "active"
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["status", "used_at"])
+          && request.resource.data.status == "used"
+          && resource.data.expires_at > request.time
+        );
+
+      allow delete: if isAdmin();
     }
 
     match /running_numbers/{docId} {

@@ -90,6 +90,7 @@ export function renderNav(profile) {
     const links = [
       makeLink("dashboard.html", "Dashboard"),
       makeLink("issue.html", "Issue"),
+      makeLink("frontdesk.html", "Guest QR"),
       makeLink("search.html", "Search"),
       makeLink("redeem.html", "Redeem"),
       makeLink("voucher-detail.html", "Vouchers")

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guest QR Pickup</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <style>
+    .fd-grid { display:grid; grid-template-columns: minmax(0,1.1fr) minmax(320px,.9fr); gap:18px; }
+    .fd-panel { display:flex; flex-direction:column; gap:16px; }
+    .fd-hero { background: linear-gradient(145deg, rgba(30,57,50,.98), rgba(0,98,65,.96)); color:#fff; border-radius:28px; padding:24px; border:1px solid rgba(255,255,255,.08); box-shadow: 0 24px 50px rgba(15,35,28,.18); }
+    .fd-hero h2 { margin:10px 0 6px; color:#fff; font-size: clamp(26px, 4vw, 36px); }
+    .fd-hero p { margin:0; color: rgba(255,255,255,.86); }
+    .fd-badges { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .fd-badges span { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.12); color:#fff; font-size:12px; font-weight:700; }
+    .fd-actions { display:flex; flex-wrap:wrap; gap:10px; }
+    .fd-actions .button-secondary { background: rgba(255,255,255,.08); color:#fff; border:1px solid rgba(255,255,255,.16); }
+    .fd-note { background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); border-radius:20px; padding:16px 18px; margin-top:18px; }
+    .fd-note strong { display:block; margin-bottom:4px; }
+    .fd-qrcode-card { display:flex; flex-direction:column; gap:14px; align-items:center; justify-content:center; text-align:center; min-height: 100%; }
+    .fd-qrcode-box { width:100%; background: linear-gradient(180deg, #fffefb 0%, #f7f4ed 100%); border-radius:28px; border:1px solid rgba(30,57,50,.10); padding:18px; box-shadow: 0 14px 30px rgba(15,35,28,.08); }
+    .fd-qrcode-box h3 { margin:0 0 6px; font-size:24px; color: var(--primary-2); }
+    .fd-qrcode-box p { margin:0; color: var(--muted); }
+    .fd-qrcode { display:flex; align-items:center; justify-content:center; min-height: 268px; padding:18px; }
+    .fd-qrcode img { background:#fff; padding:14px; border-radius:22px; box-shadow: 0 10px 22px rgba(15,35,28,.10); }
+    .fd-timer { display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:8px 14px; border-radius:999px; background: var(--warning-bg); color: var(--warning-text); font-weight:800; letter-spacing:.02em; }
+    .fd-meta { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; text-align:left; margin-top:14px; }
+    .fd-meta-card { background:#fff; border:1px solid var(--line); border-radius:18px; padding:14px; }
+    .fd-meta-card .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+    .fd-meta-card strong { font-size:18px; color:var(--primary-2); }
+    .fd-link-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+    .fd-link-row input { min-width: 0; }
+    .fd-status { border-radius:20px; padding:16px 18px; }
+    .fd-status.success { background: var(--success-bg); color: var(--success-text); }
+    .fd-status.error { background: var(--danger-bg); color: var(--danger-text); }
+    .fd-status.info { background: rgba(0,98,65,.08); color: var(--primary-2); }
+    .fd-status h3 { margin:0 0 6px; }
+    .fd-stats { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; }
+    .fd-stat-card { background: linear-gradient(180deg, #fffefb 0%, #f8f4eb 100%); border:1px solid rgba(30,57,50,.10); border-radius:18px; padding:14px; }
+    .fd-stat-card .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+    .fd-stat-card strong { display:block; color: var(--primary-2); font-size:30px; line-height:1; margin-bottom:6px; }
+    .hidden-inline { display:none !important; }
+    @media (max-width: 960px) {
+      .fd-grid { grid-template-columns: 1fr; }
+      .fd-meta { grid-template-columns: 1fr; }
+      .fd-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+  </style>
+</head>
+<body class="app-page">
+  <div class="container app-shell">
+    <section class="page-header">
+      <div class="page-header-row">
+        <div>
+          <span class="soft-badge">Front Desk Flow</span>
+          <h1>Guest QR Pickup</h1>
+          <p class="page-subtitle">พนักงานกดสร้าง QR ชั่วคราวให้แขกสแกน แล้วระบบจะหยิบ Voucher 1 ใบจาก pool ที่พร้อมแจกออกมาเป็น QR และ Code ให้แขกทันที</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="fd-grid">
+      <div class="fd-panel">
+        <div class="fd-hero">
+          <span class="brand-badge">Laya Voucher · Controlled Pickup</span>
+          <h2>1 QR = 1 Guest = 1 Voucher</h2>
+          <p>QR นี้ใช้ชั่วคราวเพื่อส่งมอบ Voucher จากระบบให้แขกอย่างปลอดภัย ลดการสแกนมั่วและตรวจสอบย้อนหลังได้ว่าใครเป็นคนปล่อย Voucher</p>
+          <div class="fd-badges">
+            <span>ใช้ได้ครั้งเดียว</span>
+            <span>หมดอายุใน 5 นาที</span>
+            <span>ดึงจาก Voucher ที่พร้อมแจก</span>
+            <span id="stockBadge">Checking pool…</span>
+          </div>
+          <div class="fd-note">
+            <strong>วิธีใช้งาน</strong>
+            กด <em>Generate Guest QR</em> → ให้แขกสแกน → แขกเห็น QR + Code ของ Voucher ของตัวเองทันที → ระบบบันทึกสถานะเป็น delivered อัตโนมัติ
+          </div>
+          <div style="height:16px"></div>
+          <div class="fd-actions">
+            <button id="generateBtn" type="button">Generate Guest QR</button>
+            <button id="releaseExpiredBtn" type="button" class="button-secondary">Release Expired QR</button>
+            <button id="refreshStatsBtn" type="button" class="button-secondary">Refresh Pool Status</button>
+            <button id="cancelBtn" type="button" class="button-secondary hidden-inline">Cancel Current QR</button>
+          </div>
+        </div>
+
+        <div class="card section-card" style="padding:18px;">
+          <div class="section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="section-title">Voucher Pool Overview</div>
+              <div class="section-subtitle">สถานะ pool แบบเรียลไทม์สำหรับหน้าฟร้อน</div>
+            </div>
+          </div>
+          <div class="fd-stats">
+            <div class="fd-stat-card">
+              <div class="label">Available</div>
+              <strong id="statAvailable">-</strong>
+              <span id="statAvailableNote" class="ref">พร้อมแจก</span>
+            </div>
+            <div class="fd-stat-card">
+              <div class="label">Reserved</div>
+              <strong id="statReserved">-</strong>
+              <span id="statReservedNote" class="ref">กำลังรอสแกน</span>
+            </div>
+            <div class="fd-stat-card">
+              <div class="label">Delivered</div>
+              <strong id="statDelivered">-</strong>
+              <span class="ref">แจกผ่าน Guest QR แล้ว</span>
+            </div>
+            <div class="fd-stat-card">
+              <div class="label">Redeemed</div>
+              <strong id="statRedeemed">-</strong>
+              <span class="ref">ถูกใช้สิทธิ์แล้ว</span>
+            </div>
+          </div>
+          <div id="poolWarning" class="fd-status info" style="margin-top:14px;">
+            <h3>Pool Monitor</h3>
+            <div>กำลังตรวจสอบจำนวน Voucher คงเหลือในระบบ…</div>
+          </div>
+        </div>
+
+        <div id="statusBox" class="fd-status info">
+          <h3>Ready</h3>
+          <div>กดปุ่มเพื่อสร้าง QR ให้แขกสแกนจากหน้า Front Desk</div>
+        </div>
+      </div>
+
+      <div class="card section-card fd-qrcode-card">
+        <div class="fd-qrcode-box">
+          <img src="assets/front_logo_crop.png" alt="Logo" style="height:58px; object-fit:contain; margin-bottom:12px;" />
+          <h3 id="pickupTitle">Waiting for Guest QR</h3>
+          <p id="pickupSubtitle">เมื่อสร้างแล้ว QR จะขึ้นที่นี่ พร้อมตัวนับเวลาหมดอายุ</p>
+          <div class="fd-qrcode" id="pickupQr"><span class="ref">No QR generated yet</span></div>
+          <div id="timerPill" class="fd-timer hidden-inline">Valid for 05:00</div>
+
+          <div class="fd-meta">
+            <div class="fd-meta-card">
+              <div class="label">Voucher Code</div>
+              <strong id="voucherCodeText">-</strong>
+            </div>
+            <div class="fd-meta-card">
+              <div class="label">Internal Ref</div>
+              <strong id="voucherRefText">-</strong>
+            </div>
+            <div class="fd-meta-card">
+              <div class="label">Recipient</div>
+              <strong id="recipientText">Walk-in Guest</strong>
+            </div>
+            <div class="fd-meta-card">
+              <div class="label">Reason</div>
+              <strong id="reasonText">-</strong>
+            </div>
+          </div>
+
+          <div class="fd-link-row">
+            <input id="guestLinkInput" type="text" readonly placeholder="Guest pickup link will appear here" />
+            <button id="copyBtn" type="button" class="button-secondary" disabled>Copy Link</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav no-print" id="navMenu"></div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { requireRole, renderNav } from "./auth-guard.js";
+    import {
+      collection, query, where, getDocs, limit, doc, runTransaction, Timestamp, addDoc
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const { user, profile } = await requireRole(["supervisor", "manager", "admin"]);
+    renderNav(profile);
+
+    const generateBtn = document.getElementById("generateBtn");
+    const releaseExpiredBtn = document.getElementById("releaseExpiredBtn");
+    const refreshStatsBtn = document.getElementById("refreshStatsBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const stockBadge = document.getElementById("stockBadge");
+    const statAvailable = document.getElementById("statAvailable");
+    const statAvailableNote = document.getElementById("statAvailableNote");
+    const statReserved = document.getElementById("statReserved");
+    const statReservedNote = document.getElementById("statReservedNote");
+    const statDelivered = document.getElementById("statDelivered");
+    const statRedeemed = document.getElementById("statRedeemed");
+    const poolWarning = document.getElementById("poolWarning");
+    const pickupQr = document.getElementById("pickupQr");
+    const pickupTitle = document.getElementById("pickupTitle");
+    const pickupSubtitle = document.getElementById("pickupSubtitle");
+    const voucherCodeText = document.getElementById("voucherCodeText");
+    const voucherRefText = document.getElementById("voucherRefText");
+    const recipientText = document.getElementById("recipientText");
+    const reasonText = document.getElementById("reasonText");
+    const guestLinkInput = document.getElementById("guestLinkInput");
+    const timerPill = document.getElementById("timerPill");
+    const statusBox = document.getElementById("statusBox");
+
+    let currentClaim = null;
+    let countdown = null;
+
+    function tokenString(len = 32) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+      const arr = new Uint8Array(len);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, v => chars[v % chars.length]).join("");
+    }
+
+    function tsToDate(value) {
+      if (!value) return null;
+      try {
+        return value.toDate ? value.toDate() : new Date(value);
+      } catch {
+        return null;
+      }
+    }
+
+    function pickReadyCandidate(docs) {
+      const now = new Date();
+      const items = docs.map(d => ({ id: d.id, ...d.data() }));
+      const filtered = items.filter(item => {
+        const handoff = item.handoff_status || "ready";
+        if (handoff === "delivered") return false;
+        if (handoff === "reserved") {
+          const expires = tsToDate(item.active_claim_expires_at);
+          if (expires && expires > now) return false;
+        }
+        return true;
+      });
+      filtered.sort((a, b) => {
+        const ad = tsToDate(a.created_at)?.getTime() || 0;
+        const bd = tsToDate(b.created_at)?.getTime() || 0;
+        return ad - bd;
+      });
+      return filtered[0] || null;
+    }
+
+    function computePoolStats(voucherDocs, redeemedDocs = []) {
+      const now = new Date();
+      const stats = { available: 0, reserved: 0, delivered: 0, redeemed: redeemedDocs.length, expiredReserved: 0 };
+      for (const snap of voucherDocs) {
+        const item = snap.data();
+        const handoff = item.handoff_status || "ready";
+        const expires = tsToDate(item.active_claim_expires_at);
+        if (handoff === "reserved") {
+          if (expires && expires <= now) {
+            stats.expiredReserved += 1;
+            stats.available += 1;
+          } else {
+            stats.reserved += 1;
+          }
+        } else if (handoff === "delivered") {
+          stats.delivered += 1;
+        } else {
+          stats.available += 1;
+        }
+      }
+      return stats;
+    }
+
+    function renderPoolStats(stats) {
+      statAvailable.textContent = String(stats.available);
+      statReserved.textContent = String(stats.reserved);
+      statDelivered.textContent = String(stats.delivered);
+      statRedeemed.textContent = String(stats.redeemed);
+      statAvailableNote.textContent = stats.expiredReserved > 0
+        ? `พร้อมแจก · มีหมดเวลา ${stats.expiredReserved} ใบ`
+        : "พร้อมแจก";
+      statReservedNote.textContent = stats.expiredReserved > 0
+        ? `รอสแกนอยู่ · หมดเวลาแล้ว ${stats.expiredReserved} ใบ`
+        : "กำลังรอสแกน";
+      stockBadge.textContent = stats.available > 0 ? `Available ${stats.available}` : "Pool Empty";
+
+      let level = "info";
+      let title = "Pool Healthy";
+      let text = `มี Voucher พร้อมแจก ${stats.available} ใบ${stats.expiredReserved ? ` และมี QR หมดเวลา ${stats.expiredReserved} ใบที่ควรปล่อยกลับเข้า pool` : ""}`;
+      if (stats.available === 0) {
+        level = "error";
+        title = "Pool Empty";
+        text = "ไม่มี Voucher พร้อมแจกแล้ว FO จะไม่สามารถ Generate Guest QR ใหม่ได้จนกว่าจะมีการออก Voucher เพิ่ม";
+      } else if (stats.available <= 3) {
+        level = "error";
+        title = "Low Stock";
+        text = `เหลือ Voucher พร้อมแจกเพียง ${stats.available} ใบ แนะนำให้ออก Voucher เติมเข้าระบบก่อนหมด`;
+      } else if (stats.available <= 10) {
+        level = "info";
+        title = "Stock Alert";
+        text = `เหลือ Voucher พร้อมแจก ${stats.available} ใบ ควรเริ่มเตรียมเติม pool เพื่อไม่ให้หน้า Front ขาด`;
+      }
+      poolWarning.className = `fd-status ${level}`;
+      poolWarning.innerHTML = `<h3>${title}</h3><div>${text}</div>`;
+    }
+
+    async function refreshPoolStats(showMessage = false) {
+      try {
+        const issuedSnap = await getDocs(query(collection(db, "vouchers"), where("status", "==", "issued")));
+        const redeemedSnap = await getDocs(query(collection(db, "vouchers"), where("status", "==", "redeemed")));
+        const stats = computePoolStats(issuedSnap.docs, redeemedSnap.docs);
+        renderPoolStats(stats);
+        if (showMessage) {
+          setStatus("success", "รีเฟรชสถานะ pool แล้ว", `พร้อมแจก ${stats.available} · รอสแกน ${stats.reserved} · แจกแล้ว ${stats.delivered} · ใช้แล้ว ${stats.redeemed}`);
+        }
+        return stats;
+      } catch (err) {
+        poolWarning.className = "fd-status error";
+        poolWarning.innerHTML = `<h3>Pool Monitor Error</h3><div>${err.message}</div>`;
+        throw err;
+      }
+    }
+
+    function setStatus(type, title, text) {
+      statusBox.className = `fd-status ${type}`;
+      statusBox.innerHTML = `<h3>${title}</h3><div>${text}</div>`;
+    }
+
+    function clearQrUI() {
+      pickupQr.innerHTML = `<span class="ref">No QR generated yet</span>`;
+      pickupTitle.textContent = "Waiting for Guest QR";
+      pickupSubtitle.textContent = "เมื่อสร้างแล้ว QR จะขึ้นที่นี่ พร้อมตัวนับเวลาหมดอายุ";
+      voucherCodeText.textContent = "-";
+      voucherRefText.textContent = "-";
+      recipientText.textContent = "Walk-in Guest";
+      reasonText.textContent = "-";
+      guestLinkInput.value = "";
+      copyBtn.disabled = true;
+      timerPill.classList.add("hidden-inline");
+      cancelBtn.classList.add("hidden-inline");
+      if (countdown) clearInterval(countdown);
+      countdown = null;
+      currentClaim = null;
+    }
+
+    function renderClaim(claim) {
+      currentClaim = claim;
+      pickupTitle.textContent = "Guest Pickup QR Ready";
+      pickupSubtitle.textContent = "ให้แขกสแกน QR นี้เพื่อรับ Voucher ของตัวเองทันที";
+      voucherCodeText.textContent = claim.voucher_code || "-";
+      voucherRefText.textContent = claim.internal_no || "-";
+      recipientText.textContent = claim.name || "Walk-in Guest";
+      reasonText.textContent = claim.reason || "-";
+      guestLinkInput.value = claim.guest_url;
+      copyBtn.disabled = false;
+      cancelBtn.classList.remove("hidden-inline");
+      pickupQr.innerHTML = "";
+      new QRCode(pickupQr, {
+        text: claim.guest_url,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      setStatus("success", "QR พร้อมใช้งาน", `Voucher ${claim.voucher_code} ถูกล็อกไว้ชั่วคราวแล้ว และจะหมดอายุเวลา ${claim.expires_at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+      startCountdown(claim.expires_at);
+    }
+
+    function startCountdown(expiresAt) {
+      if (countdown) clearInterval(countdown);
+      timerPill.classList.remove("hidden-inline");
+      const tick = () => {
+        const remain = expiresAt.getTime() - Date.now();
+        if (remain <= 0) {
+          timerPill.textContent = "Expired";
+          clearInterval(countdown);
+          countdown = null;
+          setStatus("error", "QR หมดอายุแล้ว", "QR นี้หมดอายุแล้ว หากยังไม่ได้สแกน ให้กดยกเลิกแล้วสร้างใหม่");
+          return;
+        }
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        timerPill.textContent = `Valid for ${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      };
+      tick();
+      countdown = setInterval(tick, 1000);
+    }
+
+    async function logAction(voucherCode, voucherRef, outlet, note, action = "claim_qr_generated") {
+      try {
+        await addDoc(collection(db, "voucher_logs"), {
+          voucher_code: voucherCode,
+          voucher_ref: voucherRef,
+          action,
+          action_at: Timestamp.now(),
+          action_by_uid: user.uid,
+          action_by_name: profile.name,
+          action_by_role: profile.role,
+          department: profile.department || "",
+          outlet: outlet || "",
+          note
+        });
+      } catch (err) {
+        console.warn("log failed", err);
+      }
+    }
+
+
+    async function releaseExpiredQr() {
+      releaseExpiredBtn.disabled = true;
+      try {
+        const snap = await getDocs(query(collection(db, "vouchers"), where("status", "==", "issued"), where("handoff_status", "==", "reserved")));
+        const now = new Date();
+        let released = 0;
+
+        for (const voucherDoc of snap.docs) {
+          const voucher = voucherDoc.data();
+          const expires = tsToDate(voucher.active_claim_expires_at);
+          const token = voucher.active_claim_token || "";
+          if (!expires || expires > now || !token) continue;
+
+          const voucherRef = doc(db, "vouchers", voucherDoc.id);
+          const claimRef = doc(db, "voucher_claim_tokens", token);
+          try {
+            await runTransaction(db, async (transaction) => {
+              const latestVoucher = await transaction.get(voucherRef);
+              if (!latestVoucher.exists()) return;
+              const latest = latestVoucher.data();
+              const latestExpires = tsToDate(latest.active_claim_expires_at);
+              if ((latest.handoff_status || "ready") !== "reserved") return;
+              if (!latestExpires || latestExpires > new Date()) return;
+
+              const claimSnap = await transaction.get(claimRef);
+              if (claimSnap.exists() && claimSnap.data().status == "active") {
+                transaction.update(claimRef, {
+                  status: "cancelled",
+                  cancelled_at: Timestamp.now()
+                });
+              }
+
+              transaction.update(voucherRef, {
+                handoff_status: "ready",
+                active_claim_token: "",
+                active_claim_expires_at: null,
+                reserved_at: null,
+                reserved_by_uid: null,
+                reserved_by_name: null,
+                updated_at: Timestamp.now()
+              });
+            });
+            released += 1;
+          } catch (innerErr) {
+            console.warn("release expired failed", voucherDoc.id, innerErr);
+          }
+        }
+
+        await refreshPoolStats(false);
+        if (released > 0) {
+          setStatus("success", "ปล่อย QR หมดเวลาแล้ว", `ปล่อย Voucher กลับเข้า pool แล้ว ${released} ใบ`);
+        } else {
+          setStatus("info", "ไม่พบ QR หมดเวลา", "ตอนนี้ยังไม่มี QR ที่หมดเวลาและต้องปล่อยกลับเข้า pool");
+        }
+      } catch (err) {
+        setStatus("error", "Release Expired QR ไม่สำเร็จ", err.message);
+      } finally {
+        releaseExpiredBtn.disabled = false;
+      }
+    }
+
+    async function generateGuestQr() {
+      generateBtn.disabled = true;
+      try {
+        if (currentClaim) {
+          throw new Error("มี QR ที่ยัง active อยู่ กรุณายกเลิกหรือรอให้หมดอายุก่อน");
+        }
+        await releaseExpiredQr();
+        const snap = await getDocs(query(collection(db, "vouchers"), where("status", "==", "issued"), limit(40)));
+        const candidate = pickReadyCandidate(snap.docs);
+        if (!candidate) {
+          throw new Error("ไม่พบ Voucher ที่พร้อมแจกในระบบ ตอนนี้มีแต่ใบที่ถูกแจกไปแล้วหรือกำลังถูกจองอยู่");
+        }
+
+        const token = tokenString(34);
+        const voucherRef = doc(db, "vouchers", candidate.id);
+        const claimRef = doc(db, "voucher_claim_tokens", token);
+        const now = new Date();
+        const nowTs = Timestamp.fromDate(now);
+        const expiresTs = Timestamp.fromDate(new Date(now.getTime() + 5 * 60 * 1000));
+        const guestUrl = new URL(`guest-claim.html?token=${encodeURIComponent(token)}`, window.location.href).href;
+
+        await runTransaction(db, async (transaction) => {
+          const voucherSnap = await transaction.get(voucherRef);
+          if (!voucherSnap.exists()) throw new Error("Voucher ไม่พบในระบบ");
+          const latest = voucherSnap.data();
+          const latestHandoff = latest.handoff_status || "ready";
+          const latestExpiry = tsToDate(latest.active_claim_expires_at);
+          if (latest.status !== "issued") throw new Error("Voucher ใบนี้ไม่อยู่ในสถานะที่แจกได้");
+          if (latestHandoff === "delivered") throw new Error("Voucher นี้ถูกแจกไปแล้ว");
+          if (latestHandoff === "reserved" && latestExpiry && latestExpiry > new Date()) {
+            throw new Error("Voucher นี้กำลังถูกจองอยู่แล้ว");
+          }
+
+          transaction.set(claimRef, {
+            token,
+            voucher_id: candidate.id,
+            voucher_code: latest.voucher_code,
+            internal_no: latest.internal_no || "",
+            name: latest.name || "",
+            room: latest.room || "",
+            reason: latest.reason || "",
+            outlet: latest.outlet || "",
+            voucher_title_small: latest.voucher_title_small || "COMPLIMENTARY",
+            voucher_title_big: latest.voucher_title_big || "1 DRINK",
+            voucher_description: latest.voucher_description || "Show this voucher to receive 1 complimentary drink",
+            validity_label: latest.validity_label || "-",
+            expiry_text: latest.validity_label || "-",
+            status: "active",
+            created_at: nowTs,
+            expires_at: expiresTs,
+            created_by_uid: user.uid,
+            created_by_name: profile.name,
+            created_by_role: profile.role,
+            guest_url: guestUrl
+          });
+
+          transaction.update(voucherRef, {
+            handoff_status: "reserved",
+            active_claim_token: token,
+            active_claim_expires_at: expiresTs,
+            reserved_at: nowTs,
+            reserved_by_uid: user.uid,
+            reserved_by_name: profile.name,
+            updated_at: nowTs
+          });
+        });
+
+        await logAction(candidate.voucher_code, candidate.internal_no || "", candidate.outlet || "", `Guest QR created / token ${token.slice(0, 8)}...`);
+        renderClaim({
+          token,
+          guest_url: guestUrl,
+          voucher_id: candidate.id,
+          voucher_code: candidate.voucher_code,
+          internal_no: candidate.internal_no || "",
+          name: candidate.name || "",
+          reason: candidate.reason || "",
+          expires_at: expiresTs.toDate()
+        });
+        await refreshPoolStats(false);
+      } catch (err) {
+        setStatus("error", "สร้าง Guest QR ไม่สำเร็จ", err.message);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    async function cancelCurrentQr() {
+      if (!currentClaim) return;
+      const ok = confirm(`ยกเลิก Guest QR ของ ${currentClaim.voucher_code} ?`);
+      if (!ok) return;
+      cancelBtn.disabled = true;
+      try {
+        const claimRef = doc(db, "voucher_claim_tokens", currentClaim.token);
+        const voucherRef = doc(db, "vouchers", currentClaim.voucher_id);
+        const nowTs = Timestamp.now();
+
+        await runTransaction(db, async (transaction) => {
+          const claimSnap = await transaction.get(claimRef);
+          const voucherSnap = await transaction.get(voucherRef);
+          if (!claimSnap.exists()) throw new Error("ไม่พบ claim token ในระบบ");
+          if (!voucherSnap.exists()) throw new Error("ไม่พบ voucher ในระบบ");
+          const claim = claimSnap.data();
+          const voucher = voucherSnap.data();
+          if (claim.status !== "active") throw new Error("QR นี้ไม่อยู่ในสถานะ active แล้ว");
+          if ((voucher.active_claim_token || "") !== currentClaim.token) throw new Error("Voucher นี้ไม่ได้ผูกกับ QR ปัจจุบันแล้ว");
+
+          transaction.update(claimRef, {
+            status: "cancelled",
+            cancelled_at: nowTs
+          });
+          transaction.update(voucherRef, {
+            handoff_status: "ready",
+            active_claim_token: "",
+            active_claim_expires_at: null,
+            reserved_at: null,
+            reserved_by_uid: null,
+            reserved_by_name: null,
+            updated_at: nowTs
+          });
+        });
+
+        await logAction(currentClaim.voucher_code, currentClaim.internal_no || "", "", "Guest QR cancelled by operator", "claim_qr_cancelled");
+        clearQrUI();
+        await refreshPoolStats(false);
+        setStatus("info", "ยกเลิก QR แล้ว", "Voucher ถูกปล่อยกลับเข้า pool แล้ว สามารถกดสร้าง QR ใหม่ได้ทันที");
+      } catch (err) {
+        setStatus("error", "ยกเลิก QR ไม่สำเร็จ", err.message);
+      } finally {
+        cancelBtn.disabled = false;
+      }
+    }
+
+    generateBtn.addEventListener("click", generateGuestQr);
+    releaseExpiredBtn.addEventListener("click", releaseExpiredQr);
+    refreshStatsBtn.addEventListener("click", async () => {
+      refreshStatsBtn.disabled = true;
+      try {
+        await refreshPoolStats(true);
+      } finally {
+        refreshStatsBtn.disabled = false;
+      }
+    });
+    cancelBtn.addEventListener("click", cancelCurrentQr);
+    copyBtn.addEventListener("click", async () => {
+      if (!guestLinkInput.value) return;
+      try {
+        await navigator.clipboard.writeText(guestLinkInput.value);
+        setStatus("success", "คัดลอกลิงก์แล้ว", "สามารถส่งลิงก์นี้ให้แขกแทนการสแกนได้เช่นกัน");
+      } catch {
+        guestLinkInput.select();
+        document.execCommand("copy");
+      }
+    });
+
+    refreshPoolStats(false);
+  </script>
+</body>
+</html>

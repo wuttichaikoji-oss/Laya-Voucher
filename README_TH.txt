@@ -66,3 +66,10 @@ Laya Voucher Full Starter Repo
 
 
 - UI Theme ล่าสุด: Premium Café Luxury Green (v4.7)
+
+
+[NEW v4.8]
+- เพิ่มหน้า frontdesk.html สำหรับสร้าง Guest QR ชั่วคราว
+- เพิ่มหน้า guest-claim.html สำหรับให้แขกรับ Voucher จาก QR
+- Voucher ใหม่จากหน้า Issue จะถูกสร้างพร้อม handoff_status = ready
+- ต้อง publish firestore.rules.txt เวอร์ชันนี้ด้วยก่อนใช้งาน
