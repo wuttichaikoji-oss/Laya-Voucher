@@ -65,10 +65,15 @@ export function renderNav(profile) {
   const nav = document.getElementById("navMenu");
   if (!nav) return;
 
+  const shell = nav.closest(".app-shell");
+  if (shell && shell.firstElementChild !== nav) {
+    shell.prepend(nav);
+  }
+
   const currentPage = (window.location.pathname.split("/").pop() || "").toLowerCase();
   const makeLink = (href, label) => `<a href="${href}" class="${currentPage === href.toLowerCase() ? "active" : ""}">${label}</a>`;
   const profileName = profile?.name || profile?.employee_id || "User";
-  const profileRole = profile?.role || "staff";
+  const profileRole = (profile?.role || "staff").toUpperCase();
 
   if (profile.role === "staff") {
     nav.innerHTML = `
@@ -87,7 +92,7 @@ export function renderNav(profile) {
       makeLink("issue.html", "Issue"),
       makeLink("search.html", "Search"),
       makeLink("redeem.html", "Redeem"),
-      makeLink("voucher-detail.html", "Voucher Detail")
+      makeLink("voucher-detail.html", "Vouchers")
     ];
 
     if (profile.role === "admin") links.push(makeLink("admin-users.html", "Users"));
